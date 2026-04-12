@@ -2,9 +2,9 @@
 
 > A next-generation, AI-powered terminal emulator and DevOps command center with a sci-fi interface.
 
-**NEXTERM** is a fullscreen, cross-platform desktop application that brings together terminal emulation, system monitoring, Docker & Kubernetes management, Git visualization, SSH connections, and AI-assisted workflows — all in a single, visually striking interface inspired by science fiction.
+**NEXTERM** is a cross-platform desktop application that brings together terminal emulation, system monitoring, Docker & Kubernetes management, Git visualization, SSH connections, and AI-assisted workflows — all in a single, visually striking interface inspired by science fiction.
 
-Built from the ground up as a spiritual successor to [eDEX-UI](https://github.com/GitSquared/edex-ui), NEXTERM reimagines the concept with modern technologies and a focus on real-world DevOps productivity.
+Built as a spiritual successor to [eDEX-UI](https://github.com/GitSquared/edex-ui), NEXTERM reimagines the concept with modern technologies and a focus on real-world DevOps productivity.
 
 ---
 
@@ -43,18 +43,19 @@ The original [eDEX-UI](https://github.com/GitSquared/edex-ui) by [@GitSquared](h
 
 ### AI Chat
 - **Multi-provider support** — LiteLLM Proxy, OpenAI, Anthropic, Ollama, or any OpenAI-compatible endpoint
-- **Model auto-discovery** — automatically fetches available models from `/model/info` and `/v1/models`
+- **Model auto-discovery** — automatically fetches available models from provider endpoints
 - **4 Chat Modes:** Chat, Plan, Agent, Ask
-- **Multi-session** — Create, switch between, and manage multiple conversations
-- **Model switching** — Change models on-the-fly from the chat header
-- **Command extraction** — Code blocks in responses get ▶ RUN buttons to execute directly in terminal
-- **opencode.json import** — Import provider configs from [OpenCode](https://opencode.ai)
+- **Multi-session** — create, switch between, and manage multiple conversations
+- **Model switching** — change models on-the-fly from the chat header
+- **Command extraction** — code blocks in responses get RUN buttons to execute directly in terminal
+- **opencode.json import** — import provider configs from [OpenCode](https://opencode.ai)
+- Sessions persisted in localStorage
 
 ### Intel Hub
 - Interactive **3D Globe** (Three.js) with network-reactive animations
 - **Command Heatmap** — categorized visualization of recent terminal commands (Git, Docker/K8s, Pkg, Net, Sys)
 - **Network Radar** — real-time interface traffic and top active connections
-- **Security Watch** — alerts for suspicious command patterns and high CPU processes
+- **Security Watch** — severity-based alerts for suspicious command patterns and high CPU processes
 
 ### System Monitoring
 - Real-time **CPU** usage chart (per-core)
@@ -65,32 +66,42 @@ The original [eDEX-UI](https://github.com/GitSquared/edex-ui) by [@GitSquared](h
 - All panels are independently collapsible
 
 ### Docker
-- Container list with state indicators (running/stopped/paused)
+- Container list with state indicators (running / stopped / paused)
 - **Start**, **Stop**, **Restart**, **Remove** actions per container
 - **Shell into container** — opens a new terminal tab with `docker exec -it`
 - Image list with size info and **Delete** capability
+- Real-time availability detection
 
 ### Kubernetes
 - **Context switcher** — list and switch between kubeconfig contexts
 - **Namespace selector** — filter resources by namespace
-- **Pods** — status, ready count, restarts, age, node info with SH/LOG/Delete actions
+- **Pods** — status, ready count, restarts, age, node info with SH / LOG / Delete actions
 - **Deployments** — ready replicas, inline **scale** control, **rollout restart**
 - **Services** — type, cluster IP, external IP, ports
+- Automatic `kubectl` path resolution for GUI environments
 
 ### Git
 - **Branch list** with current branch indicator
 - **Commit log** with hash, author, date
 - **Status** — staged, modified, untracked files
-- **Auto-sync with terminal CWD**
+- **Auto-sync with terminal CWD** — navigating in the terminal updates the Git panel
+- Manual repository path input
 
 ### SSH
 - Save connection profiles with **host, port, username, auth method**
-- **Private key path** support
+- **Private key path** support (`~/.ssh/id_rsa`, `~/.ssh/id_ed25519`, etc.)
 - **Connect** button opens a new terminal tab with SSH
+- Edit and delete profiles
+
+### File Explorer
+- CWD-tracking file browser in the bottom panel
+- Click filenames to insert into the active terminal
 
 ### Appearance
 - 5 built-in themes: **Tron** (default), **Blade**, **Matrix**, **Nord**, **Cyberpunk**
-- Adjustable font size and sound effects
+- Adjustable font size
+- Sound effects with volume control
+- Full sci-fi aesthetic with CSS custom properties
 
 ---
 
@@ -98,22 +109,26 @@ The original [eDEX-UI](https://github.com/GitSquared/edex-ui) by [@GitSquared](h
 
 | Layer | Technology |
 |-------|-----------|
-| Desktop Shell | **Tauri v2** (Rust backend) |
-| Frontend | **Svelte 5** + TypeScript |
-| Build | **Vite 6** |
-| Terminal | **xterm.js v5** + WebGL renderer |
-| System Info | `sysinfo` (Rust) |
-| Docker | `bollard` (Rust) |
-| Git | `git2` (Rust) |
-| Kubernetes | `kubectl` CLI (JSON parsing) |
-| AI Chat | Direct HTTP (`fetch`) to OpenAI-compatible APIs |
-| 3D Globe | **Three.js** |
+| Desktop Shell | [Tauri v2](https://tauri.app/) (Rust backend) |
+| Frontend | [Svelte 5](https://svelte.dev/) + TypeScript |
+| Build | [Vite 6](https://vite.dev/) |
+| Styling | [Tailwind CSS v4](https://tailwindcss.com/) + inline styles + CSS custom properties |
+| Terminal | [xterm.js v6](https://xtermjs.org/) + WebGL renderer |
+| 3D Visualization | [Three.js](https://threejs.org/) |
+| Audio | [Howler.js](https://howlerjs.com/) |
+| System Info | [`sysinfo`](https://crates.io/crates/sysinfo) (Rust) |
+| Terminal PTY | [`portable-pty`](https://crates.io/crates/portable-pty) (Rust) |
+| Docker | [`bollard`](https://crates.io/crates/bollard) (Rust) |
+| Git | [`git2`](https://crates.io/crates/git2) (Rust / libgit2) |
+| Kubernetes | `kubectl` CLI with JSON parsing |
+| AI Chat | Direct HTTP `fetch` to OpenAI-compatible APIs |
+| Date/Time | [`chrono`](https://crates.io/crates/chrono) (Rust) |
 
 ---
 
 ## Install
 
-### Homebrew (macOS — recommended)
+### Homebrew Cask (macOS — recommended)
 
 ```bash
 brew tap musanmaz/nexterm
@@ -126,7 +141,7 @@ This installs NEXTERM as a proper macOS `.app` bundle in `/Applications`.
 
 Download the latest `.dmg` from the [Releases](https://github.com/musanmaz/nexterm/releases) page:
 
-1. Open `NEXTERM-1.0.0-arm64.dmg`
+1. Open the `.dmg` file
 2. Drag **NEXTERM.app** to Applications
 3. Launch from Spotlight or Launchpad
 
@@ -145,11 +160,6 @@ The built `.app` will be at `src-tauri/target/release/bundle/macos/NEXTERM.app`.
 
 ## Development
 
-```bash
-npm install
-npm run tauri dev
-```
-
 ### Prerequisites
 
 - [Rust](https://rustup.rs/) (1.70+)
@@ -158,19 +168,26 @@ npm run tauri dev
 - (Optional) Docker for container management
 - (Optional) `kubectl` for Kubernetes features
 
+### Run
+
+```bash
+npm install
+npm run tauri dev
+```
+
 ---
 
 ## AI Setup
 
-1. Open **Settings** (⚙ in sidebar or `Ctrl+,`)
+1. Open **Settings** (gear icon in sidebar or `Ctrl+,`)
 2. Go to **PROVIDERS** tab
-3. Click **+ ADD**, select provider type
+3. Click **+ ADD** and select provider type (LiteLLM, OpenAI, Anthropic, Ollama, OpenAI-compatible)
 4. Enter Base URL and API Key
-5. Click **⚡ TEST CONNECTION** to verify
-6. Click **↻ DISCOVER MODELS** to auto-fetch available models
+5. Click **TEST CONNECTION** to verify
+6. Click **DISCOVER MODELS** to auto-fetch available models
 7. Select a model and **SAVE**
 
-Or import from OpenCode: click **📋 IMPORT FROM OPENCODE.JSON** and paste your config.
+Or import from OpenCode: click **IMPORT FROM OPENCODE.JSON** and paste your `opencode.json` content.
 
 ---
 
@@ -182,24 +199,52 @@ nexterm/
 │   └── src/
 │       ├── lib.rs             # Tauri app setup + command registration
 │       ├── pty/               # PTY session management
-│       ├── system/            # System monitoring
-│       ├── docker/            # Docker management
+│       ├── system/            # System monitoring (CPU, RAM, disk, network, processes)
+│       ├── docker/            # Docker container & image management (bollard)
 │       ├── kubernetes/        # Kubernetes operations via kubectl
 │       ├── git/               # Git operations (libgit2)
 │       ├── ssh/               # SSH profile storage
 │       └── ai/                # AI provider integration
 ├── src/                       # Svelte frontend
 │   ├── lib/
-│   │   ├── components/        # UI components
-│   │   ├── stores/            # Svelte 5 reactive stores
-│   │   ├── utils/             # IPC, AI chat, model discovery
+│   │   ├── components/
+│   │   │   ├── terminal/      # Terminal, TerminalTabs, AIAssistant, CommandHistory
+│   │   │   ├── system/        # CpuChart, MemoryChart, NetworkMonitor
+│   │   │   ├── docker/        # DockerPanel, ContainerList
+│   │   │   ├── kubernetes/    # KubernetesPanel
+│   │   │   ├── git/           # GitPanel
+│   │   │   ├── ssh/           # SSHManager, ConnectionList
+│   │   │   ├── sidebar/       # Sidebar, Globe (Intel Hub)
+│   │   │   ├── filesystem/    # FileExplorer
+│   │   │   ├── settings/      # SettingsModal
+│   │   │   └── shared/        # Panel, Modal, Chart
+│   │   ├── stores/            # Svelte 5 reactive stores (.svelte.ts)
+│   │   ├── utils/             # IPC, AI chat, model discovery, audio, keybindings
 │   │   └── types/             # TypeScript definitions
 │   └── routes/                # SvelteKit pages
-├── Casks/                     # Homebrew Cask formula
-├── Formula/                   # Homebrew formula (legacy)
+├── Casks/                     # Homebrew Cask formula (macOS .app via DMG)
+├── Formula/                   # Homebrew formula (legacy CLI binary)
 ├── docs/screenshots/          # README screenshots
-└── static/                    # Themes, sounds
+└── static/                    # Themes (JSON), sound effects
 ```
+
+---
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Shift+T` | New terminal tab |
+| `Ctrl+,` | Open settings |
+| Double-click tab | Rename terminal tab |
+
+---
+
+## Themes
+
+Built-in: **Tron** (default), **Blade**, **Matrix**, **Nord**, **Cyberpunk**
+
+Themes are JSON files in `static/themes/` defining colors for the UI, terminal, and 3D globe.
 
 ---
 
@@ -217,12 +262,13 @@ nexterm/
 
 ## Credits
 
-- [eDEX-UI](https://github.com/GitSquared/edex-ui) by [@GitSquared](https://github.com/GitSquared) — The original sci-fi terminal emulator
+- [eDEX-UI](https://github.com/GitSquared/edex-ui) by [@GitSquared](https://github.com/GitSquared) — The original sci-fi terminal emulator that started it all
 - [Tauri](https://tauri.app) — Lightweight desktop app framework
 - [Svelte](https://svelte.dev) — Reactive UI framework
 - [xterm.js](https://xtermjs.org) — Terminal emulator component
 - [Three.js](https://threejs.org) — 3D graphics
 - [LiteLLM](https://litellm.ai) — LLM proxy for unified model access
+- [OpenCode](https://opencode.ai) — AI coding assistant (config format inspiration)
 
 ---
 

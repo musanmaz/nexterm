@@ -1,5 +1,100 @@
 # NEXTERM
 
+AI-powered terminal emulator and DevOps command center built with Tauri + Svelte.
+
+NEXTERM is a modern successor-inspired project based on the spirit of [eDEX-UI](https://github.com/GitSquared/edex-ui), redesigned for practical developer workflows in one desktop UI: terminal, AI chat, Docker, Kubernetes, Git, SSH, and system monitoring.
+
+## Screenshots
+
+![NEXTERM Main UI](docs/screenshots/main-ui.jpg)
+![NEXTERM AI Chat](docs/screenshots/ai-chat.jpg)
+
+## Features
+
+- Multi-tab terminal with inline tab rename
+- AI Chat modes: Chat, Plan, Agent, Ask
+- Multi-provider AI support: LiteLLM, OpenAI, Anthropic, Ollama, OpenAI-compatible
+- Docker panel: list, lifecycle actions, container exec, image management
+- Kubernetes panel: contexts, namespaces, pods, deployments, services
+- Git panel synced with terminal CWD
+- SSH profile manager with private key path support
+- Intel Hub panel:
+  - 3D globe visualization
+  - command heatmap
+  - network radar
+  - security watch alerts
+
+## Tech Stack
+
+- Tauri v2 (Rust backend)
+- Svelte 5 + TypeScript
+- Vite 6
+- xterm.js
+- Three.js
+
+## Development
+
+```bash
+npm install
+npm run tauri dev
+```
+
+## Build
+
+```bash
+npm run tauri build
+```
+
+## Install with Homebrew
+
+Homebrew tap repository:
+
+- https://github.com/musanmaz/homebrew-nexterm
+
+Install:
+
+```bash
+brew tap musanmaz/nexterm
+brew install nexterm
+```
+
+Run:
+
+```bash
+nexterm
+```
+
+## Releases
+
+- Releases: https://github.com/musanmaz/nexterm/releases
+- Current release: https://github.com/musanmaz/nexterm/releases/tag/v1.0.0
+
+## Repository
+
+- Source: https://github.com/musanmaz/nexterm
+- Homebrew tap: https://github.com/musanmaz/homebrew-nexterm
+
+## Project Structure
+
+```text
+.
+├── src/                 # Svelte frontend
+├── src-tauri/           # Rust backend
+├── Formula/             # Homebrew formula (source repo copy)
+├── docs/screenshots/    # README screenshots
+└── static/
+```
+
+## Credits
+
+- Original inspiration: [eDEX-UI](https://github.com/GitSquared/edex-ui) by GitSquared
+- Built with [Tauri](https://tauri.app/), [Svelte](https://svelte.dev/), [xterm.js](https://xtermjs.org/)
+
+## License
+
+MIT — see [LICENSE](LICENSE)
+# NEXTERM
+
 NEXTERM is an AI-powered terminal emulator and DevOps desktop workspace built with Tauri + Svelte.
 
 It is a modern successor-inspired project based on the spirit of [eDEX-UI](https://github.com/GitSquared/edex-ui), redesigned for real developer workflows: terminal, Docker, Kubernetes, Git, SSH, and AI chat in one screen.

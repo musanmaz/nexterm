@@ -43,7 +43,9 @@ npm run tauri build
 
 ## Install with Homebrew
 
-This repository also acts as a Homebrew tap.
+Homebrew tap repository:
+
+- https://github.com/musanmaz/homebrew-nexterm
 
 ```bash
 brew tap musanmaz/nexterm

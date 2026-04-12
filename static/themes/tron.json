@@ -1,0 +1,46 @@
+{
+  "name": "Tron",
+  "colors": {
+    "primary": "#00d4ff",
+    "secondary": "#0abdc6",
+    "accent": "#ea00d9",
+    "bgPrimary": "#091833",
+    "bgSecondary": "#0d2137",
+    "bgPanel": "rgba(13, 33, 55, 0.85)",
+    "text": "#a0d4e4",
+    "textBright": "#00ffff",
+    "border": "rgba(0, 212, 255, 0.3)",
+    "borderBright": "rgba(0, 212, 255, 0.6)",
+    "success": "#00ff9f",
+    "warning": "#ffb800",
+    "error": "#ff003c"
+  },
+  "terminal": {
+    "background": "#091833",
+    "foreground": "#00d4ff",
+    "cursor": "#00ffff",
+    "selectionBackground": "rgba(0, 212, 255, 0.3)",
+    "black": "#000000",
+    "red": "#ff003c",
+    "green": "#00ff9f",
+    "yellow": "#ffb800",
+    "blue": "#00d4ff",
+    "magenta": "#ea00d9",
+    "cyan": "#0abdc6",
+    "white": "#d0d0d0",
+    "brightBlack": "#555555",
+    "brightRed": "#ff4466",
+    "brightGreen": "#55ffb2",
+    "brightYellow": "#ffd044",
+    "brightBlue": "#44ddff",
+    "brightMagenta": "#ff44ee",
+    "brightCyan": "#44eedd",
+    "brightWhite": "#ffffff"
+  },
+  "globe": {
+    "baseColor": "#00d4ff",
+    "markerColor": "#ea00d9",
+    "pinColor": "#00ff9f",
+    "satelliteColor": "#ffb800"
+  }
+}

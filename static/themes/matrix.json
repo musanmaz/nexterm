@@ -1,0 +1,46 @@
+{
+  "name": "Matrix",
+  "colors": {
+    "primary": "#00ff41",
+    "secondary": "#008f11",
+    "accent": "#00ff41",
+    "bgPrimary": "#000000",
+    "bgSecondary": "#0a0a0a",
+    "bgPanel": "rgba(0, 10, 0, 0.85)",
+    "text": "#00aa22",
+    "textBright": "#00ff41",
+    "border": "rgba(0, 255, 65, 0.2)",
+    "borderBright": "rgba(0, 255, 65, 0.5)",
+    "success": "#00ff41",
+    "warning": "#88ff00",
+    "error": "#ff0000"
+  },
+  "terminal": {
+    "background": "#000000",
+    "foreground": "#00ff41",
+    "cursor": "#00ff41",
+    "selectionBackground": "rgba(0, 255, 65, 0.2)",
+    "black": "#000000",
+    "red": "#ff0000",
+    "green": "#00ff41",
+    "yellow": "#88ff00",
+    "blue": "#008f11",
+    "magenta": "#00ff41",
+    "cyan": "#00aa22",
+    "white": "#cccccc",
+    "brightBlack": "#333333",
+    "brightRed": "#ff4444",
+    "brightGreen": "#44ff77",
+    "brightYellow": "#aaff44",
+    "brightBlue": "#44bb44",
+    "brightMagenta": "#44ff44",
+    "brightCyan": "#44cc55",
+    "brightWhite": "#ffffff"
+  },
+  "globe": {
+    "baseColor": "#00ff41",
+    "markerColor": "#88ff00",
+    "pinColor": "#00ff41",
+    "satelliteColor": "#008f11"
+  }
+}

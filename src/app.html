@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%sveltekit.assets%/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NEXTERM</title>
+    %sveltekit.head%
+  </head>
+  <body data-sveltekit-preload-data="hover">
+    <div style="display: contents">%sveltekit.body%</div>
+    <script>
+      (function() {
+        var dbg = document.createElement('div');
+        dbg.id = '__dbg';
+        dbg.style.cssText = 'position:fixed;bottom:0;left:0;width:100%;max-height:120px;overflow:auto;background:rgba(0,0,0,0.9);color:#0f0;z-index:999999;font:11px monospace;padding:4px 8px;pointer-events:none;display:none;';
+        document.body.appendChild(dbg);
+        function log(msg, color) {
+          dbg.style.display = 'block';
+          dbg.innerHTML += '<div style="color:' + (color||'#0f0') + '">[' + new Date().toLocaleTimeString() + '] ' + msg + '</div>';
+          dbg.scrollTop = dbg.scrollHeight;
+        }
+        window.addEventListener('error', function(e) {
+          var stack = e && e.error && e.error.stack ? ' | ' + e.error.stack : '';
+          log('ERROR: ' + e.message + ' (' + e.filename + ':' + e.lineno + ')' + stack, '#f00');
+        });
+        window.addEventListener('unhandledrejection', function(e) {
+          var reason = e && e.reason ? e.reason : '';
+          var msg = reason && reason.message ? reason.message : String(reason);
+          var stack = reason && reason.stack ? ' | ' + reason.stack : '';
+          log('UNHANDLED: ' + msg + stack, '#f80');
+        });
+        window.__dbgLog = log;
+      })();
+    </script>
+  </body>
+</html>

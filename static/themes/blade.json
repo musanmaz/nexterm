@@ -1,0 +1,46 @@
+{
+  "name": "Blade",
+  "colors": {
+    "primary": "#ff6600",
+    "secondary": "#ff9900",
+    "accent": "#ff0066",
+    "bgPrimary": "#1a0a00",
+    "bgSecondary": "#261200",
+    "bgPanel": "rgba(26, 10, 0, 0.85)",
+    "text": "#cc8844",
+    "textBright": "#ffaa00",
+    "border": "rgba(255, 102, 0, 0.3)",
+    "borderBright": "rgba(255, 102, 0, 0.6)",
+    "success": "#44ff00",
+    "warning": "#ffcc00",
+    "error": "#ff0044"
+  },
+  "terminal": {
+    "background": "#1a0a00",
+    "foreground": "#ff9900",
+    "cursor": "#ffaa00",
+    "selectionBackground": "rgba(255, 102, 0, 0.3)",
+    "black": "#000000",
+    "red": "#ff0044",
+    "green": "#44ff00",
+    "yellow": "#ffcc00",
+    "blue": "#ff6600",
+    "magenta": "#ff0066",
+    "cyan": "#ff9900",
+    "white": "#d0d0d0",
+    "brightBlack": "#555555",
+    "brightRed": "#ff4477",
+    "brightGreen": "#77ff44",
+    "brightYellow": "#ffdd44",
+    "brightBlue": "#ff8844",
+    "brightMagenta": "#ff4488",
+    "brightCyan": "#ffbb44",
+    "brightWhite": "#ffffff"
+  },
+  "globe": {
+    "baseColor": "#ff6600",
+    "markerColor": "#ff0066",
+    "pinColor": "#44ff00",
+    "satelliteColor": "#ffcc00"
+  }
+}

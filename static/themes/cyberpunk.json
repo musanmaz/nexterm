@@ -1,0 +1,46 @@
+{
+  "name": "Cyberpunk",
+  "colors": {
+    "primary": "#f706cf",
+    "secondary": "#f7238a",
+    "accent": "#04d9ff",
+    "bgPrimary": "#120024",
+    "bgSecondary": "#1a0033",
+    "bgPanel": "rgba(18, 0, 36, 0.9)",
+    "text": "#e066ff",
+    "textBright": "#ff00ff",
+    "border": "rgba(247, 6, 207, 0.3)",
+    "borderBright": "rgba(247, 6, 207, 0.6)",
+    "success": "#39ff14",
+    "warning": "#ffd300",
+    "error": "#ff0000"
+  },
+  "terminal": {
+    "background": "#120024",
+    "foreground": "#f706cf",
+    "cursor": "#04d9ff",
+    "selectionBackground": "rgba(247, 6, 207, 0.3)",
+    "black": "#120024",
+    "red": "#ff0000",
+    "green": "#39ff14",
+    "yellow": "#ffd300",
+    "blue": "#04d9ff",
+    "magenta": "#f706cf",
+    "cyan": "#f7238a",
+    "white": "#e0e0e0",
+    "brightBlack": "#444444",
+    "brightRed": "#ff4444",
+    "brightGreen": "#66ff44",
+    "brightYellow": "#ffdd44",
+    "brightBlue": "#44ddff",
+    "brightMagenta": "#ff44dd",
+    "brightCyan": "#ff66aa",
+    "brightWhite": "#ffffff"
+  },
+  "globe": {
+    "baseColor": "#f706cf",
+    "markerColor": "#04d9ff",
+    "pinColor": "#39ff14",
+    "satelliteColor": "#ffd300"
+  }
+}

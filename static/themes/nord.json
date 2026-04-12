@@ -1,0 +1,46 @@
+{
+  "name": "Nord",
+  "colors": {
+    "primary": "#88c0d0",
+    "secondary": "#81a1c1",
+    "accent": "#b48ead",
+    "bgPrimary": "#2e3440",
+    "bgSecondary": "#3b4252",
+    "bgPanel": "rgba(46, 52, 64, 0.9)",
+    "text": "#d8dee9",
+    "textBright": "#eceff4",
+    "border": "rgba(136, 192, 208, 0.3)",
+    "borderBright": "rgba(136, 192, 208, 0.6)",
+    "success": "#a3be8c",
+    "warning": "#ebcb8b",
+    "error": "#bf616a"
+  },
+  "terminal": {
+    "background": "#2e3440",
+    "foreground": "#d8dee9",
+    "cursor": "#88c0d0",
+    "selectionBackground": "rgba(136, 192, 208, 0.3)",
+    "black": "#3b4252",
+    "red": "#bf616a",
+    "green": "#a3be8c",
+    "yellow": "#ebcb8b",
+    "blue": "#81a1c1",
+    "magenta": "#b48ead",
+    "cyan": "#88c0d0",
+    "white": "#e5e9f0",
+    "brightBlack": "#4c566a",
+    "brightRed": "#bf616a",
+    "brightGreen": "#a3be8c",
+    "brightYellow": "#ebcb8b",
+    "brightBlue": "#81a1c1",
+    "brightMagenta": "#b48ead",
+    "brightCyan": "#8fbcbb",
+    "brightWhite": "#eceff4"
+  },
+  "globe": {
+    "baseColor": "#88c0d0",
+    "markerColor": "#b48ead",
+    "pinColor": "#a3be8c",
+    "satelliteColor": "#ebcb8b"
+  }
+}

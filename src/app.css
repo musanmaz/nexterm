@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Fira Code';
+  src: local('Fira Code');
+}
+
+:root {
+  --color-primary: #00d4ff;
+  --color-secondary: #0abdc6;
+  --color-accent: #ea00d9;
+  --color-bg-primary: #091833;
+  --color-bg-secondary: #0d2137;
+  --color-bg-panel: rgba(13, 33, 55, 0.85);
+  --color-text: #a0d4e4;
+  --color-text-bright: #00ffff;
+  --color-border: rgba(0, 212, 255, 0.3);
+  --color-border-bright: rgba(0, 212, 255, 0.6);
+  --color-success: #00ff9f;
+  --color-warning: #ffb800;
+  --color-error: #ff003c;
+  --color-chart-1: #00d4ff;
+  --color-chart-2: #ea00d9;
+  --color-chart-3: #00ff9f;
+  --color-chart-4: #ffb800;
+  --font-mono: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+  --font-ui: 'Share Tech Mono', 'Fira Code', monospace;
+  --glow-primary: 0 0 10px rgba(0, 212, 255, 0.3);
+  --glow-accent: 0 0 10px rgba(234, 0, 217, 0.3);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg-primary);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  user-select: none;
+  cursor: default;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-bright);
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.98; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes text-glitch {
+  0%, 100% { text-shadow: none; }
+  25% { text-shadow: 2px 0 var(--color-accent), -2px 0 var(--color-primary); }
+  50% { text-shadow: -1px 0 var(--color-primary), 1px 0 var(--color-accent); }
+  75% { text-shadow: 1px 0 var(--color-accent), -1px 0 var(--color-primary); }
+}
+
+.sci-fi-panel {
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  position: relative;
+  overflow: hidden;
+}
+
+.sci-fi-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+  opacity: 0.6;
+}
+
+.sci-fi-panel::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+  opacity: 0.3;
+}
+
+.panel-title {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--color-text-bright);
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(0, 212, 255, 0.05);
+}
+
+.glow-text {
+  color: var(--color-text-bright);
+  text-shadow: var(--glow-primary);
+}

@@ -7,11 +7,12 @@
   import { ptySpawn, ptyWrite, ptyResize, ptyKill, ptyGetCwd, onPtyOutput, onPtyExit } from '$lib/utils/ipc';
   import type { PtySessionInfo, Theme } from '$lib/types';
 
-  let { theme = null, fontSize = 14, onsession, oncwd }: {
+  let { theme = null, fontSize = 14, onsession, oncwd, oncommand }: {
     theme?: Theme | null;
     fontSize?: number;
     onsession?: (sessionId: string) => void;
     oncwd?: (path: string) => void;
+    oncommand?: (cmd: string) => void;
   } = $props();
 
   let container: HTMLDivElement;
@@ -106,7 +107,28 @@
       });
 
       let cwdTimer: ReturnType<typeof setTimeout> | null = null;
+      let inputBuffer = '';
+
       xterm.onData((data) => {
+        // Capture user-entered commands from raw terminal input.
+        // This enables command telemetry for visualization panels.
+        if (data === '\r' || data === '\n') {
+          const cmd = inputBuffer.trim();
+          if (cmd) oncommand?.(cmd);
+          inputBuffer = '';
+        } else if (data === '\u007f') {
+          // Backspace
+          inputBuffer = inputBuffer.slice(0, -1);
+        } else if (data === '\u0003') {
+          // Ctrl+C
+          inputBuffer = '';
+        } else {
+          // Keep printable characters only to avoid escape/control sequences.
+          for (const ch of data) {
+            if (ch >= ' ' && ch <= '~') inputBuffer += ch;
+          }
+        }
+
         if (session) {
           ptyWrite(session.id, data);
           // After Enter key, check CWD after a short delay (fallback for no OSC 7)

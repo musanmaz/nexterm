@@ -46,6 +46,7 @@
   let rightCollapsed = $state(false);
   let tabSessions = $state<Record<string, string>>({});
   let pendingCommands = $state<Record<string, string>>({});
+  let commandFeed = $state<string[]>([]);
   let initError = $state('');
   let cmdHistoryRef: CommandHistory;
 
@@ -179,7 +180,14 @@
     if (activeSessionId) {
       ptyWrite(activeSessionId, cmd + '\n');
       cmdHistoryRef?.addToHistory(cmd);
+      recordCommand(cmd);
     }
+  }
+
+  function recordCommand(cmd: string) {
+    const clean = cmd.trim();
+    if (!clean) return;
+    commandFeed = [clean, ...commandFeed.filter(c => c !== clean)].slice(0, 120);
   }
 
   async function handleSettingsUpdate(partial: Record<string, any>) {
@@ -251,6 +259,7 @@
             fontSize={settingsStore.current.fontSize}
             onsession={(sid) => handleSession(tab.id, sid)}
             oncwd={handleCwd}
+            oncommand={recordCommand}
           />
         </div>
       {/each}
@@ -293,11 +302,14 @@
           <Panel title="TOP PROCESSES" collapsible>
             <ProcessList processes={systemStore.processes} />
           </Panel>
-          <Panel title="GLOBE" collapsible>
-            <div style="height:180px;">
+          <Panel title="INTEL HUB" collapsible>
+            <div style="height:260px;">
               <Globe
                 baseColor={themeStore.current?.globe?.baseColor}
                 markerColor={themeStore.current?.globe?.markerColor}
+                commands={commandFeed}
+                network={systemStore.network}
+                processes={systemStore.processes}
               />
             </div>
           </Panel>

@@ -1,11 +1,45 @@
 use serde::{Deserialize, Serialize};
+use std::env;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
+fn resolve_kubectl_path() -> Option<PathBuf> {
+    let mut candidates: Vec<PathBuf> = Vec::new();
+
+    if let Ok(path_env) = env::var("PATH") {
+        for p in env::split_paths(&path_env) {
+            candidates.push(p.join("kubectl"));
+        }
+    }
+
+    // macOS GUI apps often miss shell PATH entries. Add common locations.
+    let fallback_paths = [
+        "/opt/homebrew/bin/kubectl",
+        "/usr/local/bin/kubectl",
+        "/usr/bin/kubectl",
+        "/bin/kubectl",
+    ];
+    for p in fallback_paths {
+        candidates.push(PathBuf::from(p));
+    }
+
+    candidates
+        .into_iter()
+        .find(|p| Path::new(p).exists())
+}
+
+fn kubectl_command() -> Result<Command, String> {
+    let kubectl_path = resolve_kubectl_path().ok_or_else(|| {
+        "kubectl not found. Ensure it is installed and available in PATH (or in /opt/homebrew/bin or /usr/local/bin).".to_string()
+    })?;
+    Ok(Command::new(kubectl_path))
+}
+
 fn kubectl(args: &[&str]) -> Result<String, String> {
-    let output = Command::new("kubectl")
-        .args(args)
+    let mut cmd = kubectl_command()?;
+    let output = cmd.args(args)
         .output()
-        .map_err(|e| format!("kubectl not found: {}", e))?;
+        .map_err(|e| format!("failed to execute kubectl: {}", e))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -70,13 +104,17 @@ pub struct K8sNamespace {
 
 #[tauri::command]
 pub fn k8s_is_available() -> bool {
-    Command::new("kubectl")
-        .arg("version")
-        .arg("--client")
-        .arg("--short")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
+    if let Ok(mut cmd) = kubectl_command() {
+        cmd.arg("version")
+            .arg("--client")
+            .arg("-o")
+            .arg("json")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+    } else {
+        false
+    }
 }
 
 #[tauri::command]

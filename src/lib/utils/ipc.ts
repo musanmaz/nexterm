@@ -153,3 +153,9 @@ export const k8sOcLogin = (apiUrl: string, username: string, password: string, i
 export const k8sOcIsAvailable = () => invoke<boolean>('k8s_oc_is_available');
 export const k8sGetContextsForKubeconfig = (kubeconfigPath: string) =>
   invoke<import('$lib/types').K8sContext[]>('k8s_get_contexts_for_kubeconfig', { kubeconfigPath });
+
+// Updater Commands
+export const downloadUpdate = (url: string, filename: string) =>
+  invoke<string>('download_update', { url, filename });
+export const installAndRestart = (dmgPath: string) =>
+  invoke<void>('install_and_restart', { dmgPath });

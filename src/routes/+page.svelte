@@ -16,6 +16,7 @@
   import PluginManager from '$lib/components/plugins/PluginManager.svelte';
   import KubernetesPanel from '$lib/components/kubernetes/KubernetesPanel.svelte';
   import SettingsModal from '$lib/components/settings/SettingsModal.svelte';
+  import UpdateBanner from '$lib/components/shared/UpdateBanner.svelte';
   import Panel from '$lib/components/shared/Panel.svelte';
 
   import { getThemeStore } from '$lib/stores/theme.svelte';
@@ -215,6 +216,8 @@
 
   let gridCols = $derived(`220px 1fr ${rightCollapsed ? '0px' : '280px'}`);
 </script>
+
+<UpdateBanner />
 
 {#if initError}
   <div style="position:fixed;top:0;left:0;right:0;background:#f00;color:#fff;padding:8px;z-index:99999;font:12px monospace;">

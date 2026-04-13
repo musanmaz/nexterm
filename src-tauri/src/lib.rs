@@ -6,6 +6,7 @@ mod ssh;
 mod plugins;
 mod ai;
 mod kubernetes;
+mod updater;
 mod state;
 
 use pty::PtyManager;
@@ -86,6 +87,9 @@ pub fn run() {
             kubernetes::k8s_oc_login,
             kubernetes::k8s_oc_is_available,
             kubernetes::k8s_get_contexts_for_kubeconfig,
+            // Updater commands
+            updater::download_update,
+            updater::install_and_restart,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

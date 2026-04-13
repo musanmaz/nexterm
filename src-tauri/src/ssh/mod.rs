@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -21,14 +22,37 @@ pub enum SSHAuthMethod {
     Agent,
 }
 
+fn profiles_path() -> PathBuf {
+    let base = dirs::data_dir().unwrap_or_else(|| PathBuf::from("."));
+    let dir = base.join("com.nexterm.app");
+    std::fs::create_dir_all(&dir).ok();
+    dir.join("ssh_profiles.json")
+}
+
+fn load_profiles_from_disk() -> HashMap<String, SSHProfile> {
+    let path = profiles_path();
+    match std::fs::read_to_string(&path) {
+        Ok(data) => serde_json::from_str(&data).unwrap_or_default(),
+        Err(_) => HashMap::new(),
+    }
+}
+
+fn save_profiles_to_disk(profiles: &HashMap<String, SSHProfile>) {
+    let path = profiles_path();
+    if let Ok(data) = serde_json::to_string_pretty(profiles) {
+        std::fs::write(&path, data).ok();
+    }
+}
+
 pub struct SSHState {
     pub profiles: Arc<Mutex<HashMap<String, SSHProfile>>>,
 }
 
 impl SSHState {
     pub fn new() -> Self {
+        let loaded = load_profiles_from_disk();
         Self {
-            profiles: Arc::new(Mutex::new(HashMap::new())),
+            profiles: Arc::new(Mutex::new(loaded)),
         }
     }
 }
@@ -40,6 +64,7 @@ pub async fn ssh_save_profile(
 ) -> Result<(), String> {
     let mut profiles = state.profiles.lock().await;
     profiles.insert(profile.id.clone(), profile);
+    save_profiles_to_disk(&profiles);
     Ok(())
 }
 
@@ -58,5 +83,6 @@ pub async fn ssh_delete_profile(
 ) -> Result<(), String> {
     let mut profiles = state.profiles.lock().await;
     profiles.remove(&profile_id);
+    save_profiles_to_disk(&profiles);
     Ok(())
 }

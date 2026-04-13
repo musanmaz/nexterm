@@ -148,3 +148,8 @@ export const k8sRestartDeployment = (namespace: string, name: string) =>
   invoke<void>('k8s_restart_deployment', { namespace, name });
 export const k8sDeletePod = (namespace: string, name: string) =>
   invoke<void>('k8s_delete_pod', { namespace, name });
+export const k8sOcLogin = (apiUrl: string, username: string, password: string, insecureSkipTls: boolean) =>
+  invoke<string>('k8s_oc_login', { apiUrl, username, password, insecureSkipTls });
+export const k8sOcIsAvailable = () => invoke<boolean>('k8s_oc_is_available');
+export const k8sGetContextsForKubeconfig = (kubeconfigPath: string) =>
+  invoke<import('$lib/types').K8sContext[]>('k8s_get_contexts_for_kubeconfig', { kubeconfigPath });

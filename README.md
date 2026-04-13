@@ -72,13 +72,15 @@ The original [eDEX-UI](https://github.com/GitSquared/edex-ui) by [@GitSquared](h
 - Image list with size info and **Delete** capability
 - Real-time availability detection
 
-### Kubernetes
+### Kubernetes & OpenShift
+- **Multi-cluster management** — add and switch between multiple kubeconfig files
+- **OpenShift support** — connect to OpenShift clusters via `oc login` with username/password
 - **Context switcher** — list and switch between kubeconfig contexts
 - **Namespace selector** — filter resources by namespace
 - **Pods** — status, ready count, restarts, age, node info with SH / LOG / Delete actions
 - **Deployments** — ready replicas, inline **scale** control, **rollout restart**
 - **Services** — type, cluster IP, external IP, ports
-- Automatic `kubectl` path resolution for GUI environments
+- Automatic `kubectl` and `oc` path resolution for GUI environments
 
 ### Git
 - **Branch list** with current branch indicator
@@ -92,6 +94,7 @@ The original [eDEX-UI](https://github.com/GitSquared/edex-ui) by [@GitSquared](h
 - **Private key path** support (`~/.ssh/id_rsa`, `~/.ssh/id_ed25519`, etc.)
 - **Connect** button opens a new terminal tab with SSH
 - Edit and delete profiles
+- **Persistent storage** — profiles survive app restart
 
 ### File Explorer
 - CWD-tracking file browser in the bottom panel
@@ -120,7 +123,7 @@ The original [eDEX-UI](https://github.com/GitSquared/edex-ui) by [@GitSquared](h
 | Terminal PTY | [`portable-pty`](https://crates.io/crates/portable-pty) (Rust) |
 | Docker | [`bollard`](https://crates.io/crates/bollard) (Rust) |
 | Git | [`git2`](https://crates.io/crates/git2) (Rust / libgit2) |
-| Kubernetes | `kubectl` CLI with JSON parsing |
+| Kubernetes | `kubectl` / `oc` CLI with JSON parsing |
 | AI Chat | Direct HTTP `fetch` to OpenAI-compatible APIs |
 | Date/Time | [`chrono`](https://crates.io/crates/chrono) (Rust) |
 
@@ -136,6 +139,13 @@ brew install --cask nexterm
 ```
 
 This installs NEXTERM as a proper macOS `.app` bundle in `/Applications`.
+
+### Update
+
+```bash
+brew update
+brew upgrade --cask nexterm
+```
 
 ### Manual Download
 
@@ -250,7 +260,7 @@ Themes are JSON files in `static/themes/` defining colors for the UI, terminal, 
 
 ## Releases
 
-- **Latest**: [v1.0.0](https://github.com/musanmaz/nexterm/releases/tag/v1.0.0)
+- **Latest**: [v1.1.0](https://github.com/musanmaz/nexterm/releases/tag/v1.1.0)
 - **All Releases**: [github.com/musanmaz/nexterm/releases](https://github.com/musanmaz/nexterm/releases)
 
 ## Repository

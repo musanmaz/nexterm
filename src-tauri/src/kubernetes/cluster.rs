@@ -3,21 +3,20 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-fn resolve_kubectl_path() -> Option<PathBuf> {
+fn resolve_bin_path(name: &str) -> Option<PathBuf> {
     let mut candidates: Vec<PathBuf> = Vec::new();
 
     if let Ok(path_env) = env::var("PATH") {
         for p in env::split_paths(&path_env) {
-            candidates.push(p.join("kubectl"));
+            candidates.push(p.join(name));
         }
     }
 
-    // macOS GUI apps often miss shell PATH entries. Add common locations.
     let fallback_paths = [
-        "/opt/homebrew/bin/kubectl",
-        "/usr/local/bin/kubectl",
-        "/usr/bin/kubectl",
-        "/bin/kubectl",
+        format!("/opt/homebrew/bin/{}", name),
+        format!("/usr/local/bin/{}", name),
+        format!("/usr/bin/{}", name),
+        format!("/bin/{}", name),
     ];
     for p in fallback_paths {
         candidates.push(PathBuf::from(p));
@@ -26,6 +25,14 @@ fn resolve_kubectl_path() -> Option<PathBuf> {
     candidates
         .into_iter()
         .find(|p| Path::new(p).exists())
+}
+
+fn resolve_kubectl_path() -> Option<PathBuf> {
+    resolve_bin_path("kubectl")
+}
+
+fn resolve_oc_path() -> Option<PathBuf> {
+    resolve_bin_path("oc")
 }
 
 fn kubectl_command() -> Result<Command, String> {
@@ -37,6 +44,22 @@ fn kubectl_command() -> Result<Command, String> {
 
 fn kubectl(args: &[&str]) -> Result<String, String> {
     let mut cmd = kubectl_command()?;
+    let output = cmd.args(args)
+        .output()
+        .map_err(|e| format!("failed to execute kubectl: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("kubectl error: {}", stderr));
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
+fn kubectl_with_kubeconfig(kubeconfig: &str, args: &[&str]) -> Result<String, String> {
+    let mut cmd = kubectl_command()?;
+    if !kubeconfig.is_empty() {
+        cmd.arg(format!("--kubeconfig={}", kubeconfig));
+    }
     let output = cmd.args(args)
         .output()
         .map_err(|e| format!("failed to execute kubectl: {}", e))?;
@@ -349,6 +372,86 @@ pub fn k8s_restart_deployment(namespace: String, name: String) -> Result<(), Str
 pub fn k8s_delete_pod(namespace: String, name: String) -> Result<(), String> {
     kubectl(&["delete", "pod", &name, &format!("-n={}", namespace)])?;
     Ok(())
+}
+
+// ─── OpenShift / Kubeconfig Management ────────────────
+
+#[tauri::command]
+pub fn k8s_oc_login(
+    api_url: String,
+    username: String,
+    password: String,
+    insecure_skip_tls: bool,
+) -> Result<String, String> {
+    let oc_path = resolve_oc_path().ok_or_else(|| {
+        "oc CLI not found. Install the OpenShift CLI (oc) and ensure it is available in PATH.".to_string()
+    })?;
+
+    let mut cmd = Command::new(oc_path);
+    cmd.arg("login")
+        .arg(format!("-u={}", username))
+        .arg(format!("-p={}", password))
+        .arg(format!("-s={}", api_url));
+
+    if insecure_skip_tls {
+        cmd.arg("--insecure-skip-tls-verify");
+    }
+
+    let output = cmd.output()
+        .map_err(|e| format!("Failed to execute oc: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if !output.status.success() {
+        return Err(format!("oc login failed: {}{}", stdout, stderr));
+    }
+
+    Ok(stdout)
+}
+
+#[tauri::command]
+pub fn k8s_oc_is_available() -> bool {
+    resolve_oc_path().is_some()
+}
+
+#[tauri::command]
+pub fn k8s_get_contexts_for_kubeconfig(kubeconfig_path: String) -> Result<Vec<K8sContext>, String> {
+    let output = kubectl_with_kubeconfig(&kubeconfig_path, &["config", "get-contexts", "-o", "name"])?;
+    let current = kubectl_with_kubeconfig(&kubeconfig_path, &["config", "current-context"])
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+
+    let mut contexts = Vec::new();
+    for line in output.lines() {
+        let name = line.trim().to_string();
+        if name.is_empty() { continue; }
+
+        let cluster = kubectl_with_kubeconfig(&kubeconfig_path, &[
+            "config", "view", "-o",
+            &format!("jsonpath={{.contexts[?(@.name==\"{}\")].context.cluster}}", name),
+        ]).unwrap_or_default().trim().to_string();
+
+        let user = kubectl_with_kubeconfig(&kubeconfig_path, &[
+            "config", "view", "-o",
+            &format!("jsonpath={{.contexts[?(@.name==\"{}\")].context.user}}", name),
+        ]).unwrap_or_default().trim().to_string();
+
+        let namespace = kubectl_with_kubeconfig(&kubeconfig_path, &[
+            "config", "view", "-o",
+            &format!("jsonpath={{.contexts[?(@.name==\"{}\")].context.namespace}}", name),
+        ]).unwrap_or_default().trim().to_string();
+
+        contexts.push(K8sContext {
+            is_current: name == current,
+            cluster,
+            user,
+            namespace: if namespace.is_empty() { "default".to_string() } else { namespace },
+            name,
+        });
+    }
+    Ok(contexts)
 }
 
 fn format_age(timestamp: &str) -> String {

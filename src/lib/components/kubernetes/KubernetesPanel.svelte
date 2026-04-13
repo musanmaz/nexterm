@@ -1,9 +1,11 @@
 <script lang="ts">
-  import type { K8sContext, K8sPod, K8sDeployment, K8sService, K8sNamespace } from '$lib/types';
+  import type { K8sContext, K8sPod, K8sDeployment, K8sService, K8sNamespace, ClusterProfile } from '$lib/types';
   import { k8sScaleDeployment, k8sRestartDeployment, k8sDeletePod } from '$lib/utils/ipc';
+  import Modal from '$lib/components/shared/Modal.svelte';
 
   let {
     available = false,
+    ocAvailable = false,
     contexts = [],
     namespaces = [],
     currentNamespace = 'default',
@@ -12,13 +14,19 @@
     services = [],
     loading = false,
     error = '',
+    clusterProfiles = [],
+    activeClusterId = 'default',
     onrefresh,
     onswitchcontext,
     onsetnamespace,
     onexec,
     onlogs,
+    onaddcluster,
+    onremovecluster,
+    onactivatecluster,
   }: {
     available?: boolean;
+    ocAvailable?: boolean;
     contexts?: K8sContext[];
     namespaces?: K8sNamespace[];
     currentNamespace?: string;
@@ -27,16 +35,56 @@
     services?: K8sService[];
     loading?: boolean;
     error?: string;
+    clusterProfiles?: ClusterProfile[];
+    activeClusterId?: string;
     onrefresh?: () => void;
     onswitchcontext?: (name: string) => void;
     onsetnamespace?: (ns: string) => void;
     onexec?: (podName: string, namespace: string, container?: string) => void;
     onlogs?: (podName: string, namespace: string, container?: string) => void;
+    onaddcluster?: (profile: ClusterProfile) => void;
+    onremovecluster?: (id: string) => void;
+    onactivatecluster?: (id: string) => void;
   } = $props();
 
   let activeTab = $state<'pods' | 'deployments' | 'services'>('pods');
   let actionMsg = $state('');
   let scaleTarget = $state<{ name: string; ns: string; replicas: number } | null>(null);
+  let showAddCluster = $state(false);
+
+  let newClusterType = $state<'kubeconfig' | 'openshift'>('openshift');
+  let newClusterName = $state('');
+  let newKubeconfigPath = $state('');
+  let newApiUrl = $state('');
+  let newUsername = $state('');
+  let newPassword = $state('');
+  let newInsecureSkipTls = $state(true);
+
+  function resetForm() {
+    newClusterType = 'openshift';
+    newClusterName = '';
+    newKubeconfigPath = '';
+    newApiUrl = '';
+    newUsername = '';
+    newPassword = '';
+    newInsecureSkipTls = true;
+  }
+
+  function handleAddCluster() {
+    const profile: ClusterProfile = {
+      id: crypto.randomUUID?.() || Math.random().toString(36).slice(2),
+      name: newClusterName || (newClusterType === 'openshift' ? newApiUrl : newKubeconfigPath),
+      type: newClusterType,
+      kubeconfigPath: newClusterType === 'kubeconfig' ? newKubeconfigPath : undefined,
+      apiUrl: newClusterType === 'openshift' ? newApiUrl : undefined,
+      username: newClusterType === 'openshift' ? newUsername : undefined,
+      password: newClusterType === 'openshift' ? newPassword : undefined,
+      insecureSkipTls: newClusterType === 'openshift' ? newInsecureSkipTls : undefined,
+    };
+    onaddcluster?.(profile);
+    showAddCluster = false;
+    resetForm();
+  }
 
   function podStatusColor(status: string): string {
     if (status === 'Running') return 'var(--color-success)';
@@ -82,6 +130,10 @@
   }
 
   const currentCtx = $derived(contexts.find(c => c.is_current));
+  const activeProfile = $derived(clusterProfiles.find(p => p.id === activeClusterId));
+
+  const inputStyle = 'width:100%;background:var(--color-bg-primary);border:1px solid var(--color-border);color:var(--color-text);font-size:11px;padding:5px 7px;font-family:inherit;outline:none;box-sizing:border-box;';
+  const labelStyle = 'display:block;font-size:9px;color:var(--color-text);letter-spacing:1.5px;margin-bottom:3px;opacity:0.7;';
 </script>
 
 <div style="height:100%;display:flex;flex-direction:column;overflow:hidden;">
@@ -94,11 +146,44 @@
       {/if}
       <button
         type="button"
+        style="padding:3px 8px;font-size:9px;background:var(--color-success);color:#000;border:none;cursor:pointer;letter-spacing:1px;"
+        onclick={() => { showAddCluster = true; resetForm(); }}
+      >+ CLUSTER</button>
+      <button
+        type="button"
         style="padding:3px 8px;font-size:9px;background:var(--color-primary);color:var(--color-bg-primary);border:none;cursor:pointer;letter-spacing:1px;"
         onclick={() => onrefresh?.()}
-      >↻ REFRESH</button>
+      >↻</button>
     </div>
   </div>
+
+  <!-- Cluster Profiles -->
+  {#if clusterProfiles.length > 1}
+    <div style="padding:6px 8px;border-bottom:1px solid var(--color-border);display:flex;flex-direction:column;gap:4px;">
+      <div style="font-size:8px;letter-spacing:1.5px;opacity:0.5;">CLUSTERS</div>
+      <div style="display:flex;flex-wrap:wrap;gap:3px;">
+        {#each clusterProfiles as profile}
+          <button
+            type="button"
+            style="padding:3px 8px;font-size:8px;border:1px solid {activeClusterId === profile.id ? 'var(--color-primary)' : 'var(--color-border)'};background:{activeClusterId === profile.id ? 'var(--color-primary)' : 'transparent'};color:{activeClusterId === profile.id ? 'var(--color-bg-primary)' : 'var(--color-text)'};cursor:pointer;display:flex;align-items:center;gap:4px;"
+            onclick={() => onactivatecluster?.(profile.id)}
+          >
+            <span>{profile.type === 'openshift' ? '🔴' : profile.type === 'kubeconfig' ? '📄' : '⚙'}</span>
+            <span style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{profile.name}</span>
+            {#if profile.id !== 'default'}
+              <span
+                style="margin-left:2px;cursor:pointer;opacity:0.5;font-size:10px;"
+                role="button"
+                tabindex="0"
+                onclick={(e) => { e.stopPropagation(); onremovecluster?.(profile.id); }}
+                onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onremovecluster?.(profile.id); } }}
+              >✕</span>
+            {/if}
+          </button>
+        {/each}
+      </div>
+    </div>
+  {/if}
 
   {#if !available}
     <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;padding:16px;">
@@ -150,8 +235,8 @@
     <div style="display:flex;border-bottom:1px solid var(--color-border);">
       {#each [
         { id: 'pods' as const, label: 'PODS', count: pods.length },
-        { id: 'deployments' as const, label: 'DEPLOYMENTS', count: deployments.length },
-        { id: 'services' as const, label: 'SERVICES', count: services.length },
+        { id: 'deployments' as const, label: 'DEPLOY', count: deployments.length },
+        { id: 'services' as const, label: 'SVC', count: services.length },
       ] as tab}
         <button
           type="button"
@@ -164,7 +249,6 @@
     <!-- Content -->
     <div style="flex:1;overflow-y:auto;">
       {#if activeTab === 'pods'}
-        <!-- PODS -->
         {#each pods as pod}
           <div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--color-border);">
             <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:{podStatusColor(pod.status)};"></div>
@@ -188,7 +272,6 @@
         {/if}
 
       {:else if activeTab === 'deployments'}
-        <!-- DEPLOYMENTS -->
         {#each deployments as dep}
           <div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--color-border);">
             <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:{deployHealthColor(dep.ready)};"></div>
@@ -221,7 +304,6 @@
         {/if}
 
       {:else if activeTab === 'services'}
-        <!-- SERVICES -->
         {#each services as svc}
           <div style="padding:6px 8px;border-bottom:1px solid var(--color-border);">
             <div style="display:flex;align-items:center;gap:6px;">
@@ -239,10 +321,66 @@
         {/if}
       {/if}
     </div>
-
-    <!-- Scale Dialog -->
-    {#if scaleTarget && activeTab !== 'deployments'}
-      <!-- hidden when not on deployments tab -->
-    {/if}
   {/if}
 </div>
+
+<!-- Add Cluster Modal -->
+<Modal title="ADD CLUSTER" bind:open={showAddCluster}>
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <div>
+      <label style={labelStyle}>TYPE</label>
+      <select bind:value={newClusterType} style={inputStyle}>
+        <option value="openshift">OpenShift (oc login)</option>
+        <option value="kubeconfig">Kubeconfig File</option>
+      </select>
+    </div>
+    <div>
+      <label style={labelStyle}>NAME</label>
+      <input bind:value={newClusterName} placeholder="My Cluster" style={inputStyle} />
+    </div>
+
+    {#if newClusterType === 'kubeconfig'}
+      <div>
+        <label style={labelStyle}>KUBECONFIG PATH</label>
+        <input bind:value={newKubeconfigPath} placeholder="/path/to/kubeconfig" style={inputStyle} />
+        <div style="font-size:8px;color:var(--color-text);opacity:0.4;margin-top:3px;">
+          Full path to kubeconfig file
+        </div>
+      </div>
+    {:else}
+      <div>
+        <label style={labelStyle}>API SERVER URL</label>
+        <input bind:value={newApiUrl} placeholder="https://api.cluster.example.com:6443" style={inputStyle} />
+      </div>
+      <div>
+        <label style={labelStyle}>USERNAME</label>
+        <input bind:value={newUsername} placeholder="admin" style={inputStyle} />
+      </div>
+      <div>
+        <label style={labelStyle}>PASSWORD</label>
+        <input type="password" bind:value={newPassword} placeholder="••••••••" style={inputStyle} />
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="oc-insecure" bind:checked={newInsecureSkipTls} />
+        <label for="oc-insecure" style="font-size:9px;color:var(--color-text);letter-spacing:1px;cursor:pointer;">
+          INSECURE SKIP TLS VERIFY
+        </label>
+      </div>
+      <div style="font-size:8px;color:var(--color-text);opacity:0.4;">
+        Runs: oc login -u=USER -p=PASS -s=URL --insecure-skip-tls-verify
+      </div>
+      {#if !ocAvailable}
+        <div style="font-size:9px;color:var(--color-warning);padding:4px;border:1px solid var(--color-warning);text-align:center;">
+          ⚠ oc CLI not found in PATH. Install OpenShift CLI first.
+        </div>
+      {/if}
+    {/if}
+
+    <button
+      type="button"
+      style="width:100%;padding:8px;font-size:11px;background:var(--color-primary);color:var(--color-bg-primary);border:none;cursor:pointer;letter-spacing:2px;"
+      onclick={handleAddCluster}
+      disabled={newClusterType === 'openshift' && !ocAvailable}
+    >ADD CLUSTER</button>
+  </div>
+</Modal>

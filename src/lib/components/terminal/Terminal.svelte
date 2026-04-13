@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
   import { Terminal as XTerm } from '@xterm/xterm';
   import { FitAddon } from '@xterm/addon-fit';
   import { WebglAddon } from '@xterm/addon-webgl';
   import { WebLinksAddon } from '@xterm/addon-web-links';
+  import { getTerminalTheme } from '$lib/utils/theme';
   import { ptySpawn, ptyWrite, ptyResize, ptyKill, ptyGetCwd, onPtyOutput, onPtyExit } from '$lib/utils/ipc';
   import type { PtySessionInfo, Theme } from '$lib/types';
 
@@ -18,6 +19,15 @@
   let container: HTMLDivElement;
   let xterm: XTerm;
   let fitAddon: FitAddon;
+
+  $effect(() => {
+    const t = theme;
+    untrack(() => {
+      if (xterm && t?.terminal) {
+        xterm.options.theme = getTerminalTheme(t);
+      }
+    });
+  });
   let session: PtySessionInfo | null = null;
   let unlistenOutput: (() => void) | null = null;
   let unlistenExit: (() => void) | null = null;

@@ -336,3 +336,14 @@ export interface K8sNamespace {
   status: string;
   age: string;
 }
+
+export interface ClusterProfile {
+  id: string;
+  name: string;
+  type: 'default' | 'kubeconfig' | 'openshift';
+  kubeconfigPath?: string;
+  apiUrl?: string;
+  username?: string;
+  password?: string;
+  insecureSkipTls?: boolean;
+}

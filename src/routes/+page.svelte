@@ -347,6 +347,7 @@
       {:else if activePanel === 'kubernetes'}
         <KubernetesPanel
           available={k8sStore.available}
+          ocAvailable={k8sStore.ocAvailable}
           contexts={k8sStore.contexts}
           namespaces={k8sStore.namespaces}
           currentNamespace={k8sStore.currentNamespace}
@@ -355,6 +356,8 @@
           services={k8sStore.services}
           loading={k8sStore.loading}
           error={k8sStore.error}
+          clusterProfiles={k8sStore.clusterProfiles}
+          activeClusterId={k8sStore.activeClusterId}
           onrefresh={() => k8sStore.refreshAll()}
           onswitchcontext={(name) => k8sStore.switchContext(name)}
           onsetnamespace={(ns) => k8sStore.setNamespace(ns)}
@@ -366,6 +369,9 @@
             const c = container ? `-c ${container}` : '';
             addTabWithCommand(`📋 ${pod}`, `kubectl logs -f ${pod} -n ${ns} ${c}`);
           }}
+          onaddcluster={(profile) => { k8sStore.addCluster(profile); k8sStore.activateCluster(profile.id); }}
+          onremovecluster={(id) => k8sStore.removeCluster(id)}
+          onactivatecluster={(id) => k8sStore.activateCluster(id)}
         />
       {:else if activePanel === 'git'}
         <GitPanel

@@ -77,7 +77,7 @@
     </button>
   {/each}
 
-  {#if tabs.length < 5}
+  {#if tabs.length < 10}
     <button
       type="button"
       style="padding:0 12px;height:100%;color:var(--color-text);font-size:14px;cursor:pointer;background:transparent;border:none;"

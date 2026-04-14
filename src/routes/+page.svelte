@@ -18,6 +18,7 @@
   import SettingsModal from '$lib/components/settings/SettingsModal.svelte';
   import UpdateBanner from '$lib/components/shared/UpdateBanner.svelte';
   import Panel from '$lib/components/shared/Panel.svelte';
+  import FuzzyFinder from '$lib/components/filesystem/FuzzyFinder.svelte';
 
   import { getThemeStore } from '$lib/stores/theme.svelte';
   import { getSettingsStore } from '$lib/stores/settings.svelte';
@@ -50,6 +51,7 @@
   let commandFeed = $state<string[]>([]);
   let initError = $state('');
   let cmdHistoryRef: CommandHistory;
+  let fuzzyOpen = $state(false);
 
   let activeSessionId = $derived(tabSessions[terminalStore.activeTabId] || '');
   let uptimeInterval: ReturnType<typeof setInterval> | null = null;
@@ -122,6 +124,11 @@
       key: ',', ctrl: true,
       handler: () => { settingsOpen = true; },
       description: 'Open settings',
+    });
+    keybindings.register({
+      key: 'p', ctrl: true,
+      handler: () => { fuzzyOpen = true; },
+      description: 'Fuzzy file finder',
     });
 
     uptimeInterval = setInterval(async () => {
@@ -427,4 +434,12 @@
   bind:open={settingsOpen}
   settings={settingsStore.current}
   onupdate={handleSettingsUpdate}
+/>
+
+<FuzzyFinder
+  bind:open={fuzzyOpen}
+  basePath={terminalCwd || '/'}
+  onselect={(path) => {
+    if (activeSessionId) ptyWrite(activeSessionId, path + ' ');
+  }}
 />

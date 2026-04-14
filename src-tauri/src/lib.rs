@@ -53,6 +53,7 @@ pub fn run() {
             docker::docker_restart_container,
             docker::docker_remove_container,
             docker::docker_is_available,
+            docker::docker_container_logs,
             docker::docker_list_images,
             docker::docker_remove_image,
             // Git commands

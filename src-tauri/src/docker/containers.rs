@@ -1,5 +1,6 @@
 use bollard::Docker;
-use bollard::container::{ListContainersOptions, StopContainerOptions, StartContainerOptions, RemoveContainerOptions};
+use bollard::container::{ListContainersOptions, StopContainerOptions, StartContainerOptions, RemoveContainerOptions, LogsOptions, LogOutput};
+use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -132,6 +133,35 @@ pub async fn docker_remove_container(
         )
         .await
         .map_err(|e| format!("Error: {}", e))
+}
+
+#[tauri::command]
+pub async fn docker_container_logs(
+    state: tauri::State<'_, DockerState>,
+    container_id: String,
+    tail: Option<String>,
+) -> Result<String, String> {
+    let guard = state.client.lock().await;
+    let docker = guard.as_ref().ok_or("Docker not available")?;
+
+    let options = Some(LogsOptions::<String> {
+        stdout: true,
+        stderr: true,
+        tail: tail.unwrap_or_else(|| "200".to_string()),
+        ..Default::default()
+    });
+
+    let mut stream = docker.logs(&container_id, options);
+    let mut output = String::new();
+    while let Some(Ok(log)) = stream.next().await {
+        match log {
+            LogOutput::StdOut { message } | LogOutput::StdErr { message } => {
+                output.push_str(&String::from_utf8_lossy(&message));
+            }
+            _ => {}
+        }
+    }
+    Ok(output)
 }
 
 #[tauri::command]

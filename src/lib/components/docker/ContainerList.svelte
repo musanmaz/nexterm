@@ -1,10 +1,11 @@
 <script lang="ts">
   import type { ContainerInfo } from '$lib/types';
 
-  let { containers = [], onaction, onexec }: {
+  let { containers = [], onaction, onexec, onlogs }: {
     containers?: ContainerInfo[];
     onaction: (id: string, action: string) => void;
     onexec?: (name: string, containerId: string) => void;
+    onlogs?: (containerId: string, name: string) => void;
   } = $props();
 
   let actionLoading = $state<string | null>(null);
@@ -59,6 +60,12 @@
             onclick={() => onexec?.(container.name, container.id)}
             title="Open shell in container"
           >SH</button>
+          <button
+            type="button"
+            style="padding:3px 8px;font-size:9px;background:var(--color-secondary);color:#fff;border:none;cursor:pointer;letter-spacing:1px;"
+            onclick={() => onlogs?.(container.id, container.name)}
+            title="View logs"
+          >LOG</button>
           <button
             type="button"
             style="padding:3px 8px;font-size:9px;background:var(--color-warning);color:#000;border:none;cursor:pointer;letter-spacing:1px;"

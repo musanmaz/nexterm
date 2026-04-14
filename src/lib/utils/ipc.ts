@@ -90,6 +90,8 @@ export const dockerRestartContainer = (containerId: string) =>
 export const dockerRemoveContainer = (containerId: string, force: boolean) =>
   invoke<void>('docker_remove_container', { containerId, force });
 export const dockerIsAvailable = () => invoke<boolean>('docker_is_available');
+export const dockerContainerLogs = (containerId: string, tail?: string) =>
+  invoke<string>('docker_container_logs', { containerId, tail });
 export const dockerListImages = () => invoke<ImageInfo[]>('docker_list_images');
 export const dockerRemoveImage = (imageId: string, force: boolean) =>
   invoke<void>('docker_remove_image', { imageId, force });

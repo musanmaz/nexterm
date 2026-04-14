@@ -60,6 +60,7 @@ export interface AppSettings {
   litellmModel: string;
   aiProviders: AIProvider[];
   activeProviderId: string;
+  terminalProfiles?: TerminalProfile[];
 }
 
 export type AIProviderType = 'openai' | 'anthropic' | 'ollama' | 'litellm' | 'openai-compatible';
@@ -107,6 +108,15 @@ export interface TerminalTab {
   title: string;
   sessionId: string | null;
   isActive: boolean;
+  profileId?: string;
+}
+
+export interface TerminalProfile {
+  id: string;
+  name: string;
+  shell: string;
+  startupCommand?: string;
+  icon?: string;
 }
 
 export interface SplitPaneConfig {

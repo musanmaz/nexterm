@@ -1,6 +1,6 @@
 cask "nexterm" do
-  version "1.5.0"
-  sha256 "8160dd55d2b6b7822dd9a9e0a74ea905d2a16cec7ddb9969c91f34893530a10a"
+  version "1.6.0"
+  sha256 "4fc837ae09f7877d4011186288eb8b55e3d70270d9ef6eb5c182f47e3fb58880"
 
   url "https://github.com/musanmaz/nexterm/releases/download/v#{version}/NEXTERM_#{version}_aarch64.dmg"
   name "NEXTERM"

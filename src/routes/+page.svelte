@@ -19,6 +19,7 @@
   import UpdateBanner from '$lib/components/shared/UpdateBanner.svelte';
   import Panel from '$lib/components/shared/Panel.svelte';
   import FuzzyFinder from '$lib/components/filesystem/FuzzyFinder.svelte';
+  import ThemeEditor from '$lib/components/settings/ThemeEditor.svelte';
 
   import { getThemeStore } from '$lib/stores/theme.svelte';
   import { getSettingsStore } from '$lib/stores/settings.svelte';
@@ -52,6 +53,7 @@
   let initError = $state('');
   let cmdHistoryRef: CommandHistory;
   let fuzzyOpen = $state(false);
+  let themeEditorOpen = $state(false);
 
   let activeSessionId = $derived(tabSessions[terminalStore.activeTabId] || '');
   let uptimeInterval: ReturnType<typeof setInterval> | null = null;
@@ -130,6 +132,11 @@
       handler: () => { fuzzyOpen = true; },
       description: 'Fuzzy file finder',
     });
+    keybindings.register({
+      key: 'e', ctrl: true, shift: true,
+      handler: () => { themeEditorOpen = true; },
+      description: 'Open theme editor',
+    });
 
     uptimeInterval = setInterval(async () => {
       try { systemStore.setUptime(await getUptime()); } catch {}
@@ -199,6 +206,10 @@
   }
 
   async function handleSettingsUpdate(partial: Record<string, any>) {
+    if (partial._openThemeEditor) {
+      themeEditorOpen = true;
+      return;
+    }
     settingsStore.update(partial);
     if (partial.theme) await themeStore.setTheme(partial.theme);
     if (partial.audioEnabled !== undefined) audio.setEnabled(partial.audioEnabled);
@@ -444,5 +455,16 @@
   basePath={terminalCwd || '/'}
   onselect={(path) => {
     if (activeSessionId) ptyWrite(activeSessionId, path + ' ');
+  }}
+/>
+
+<ThemeEditor
+  bind:open={themeEditorOpen}
+  theme={themeStore.current}
+  onsave={async (customTheme) => {
+    try {
+      localStorage.setItem('nexterm-custom-theme', JSON.stringify(customTheme));
+      themeStore.applyTheme(customTheme);
+    } catch {}
   }}
 />

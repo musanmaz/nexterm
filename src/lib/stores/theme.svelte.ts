@@ -20,10 +20,17 @@ export function getThemeStore() {
     }
   }
 
+  function applyCustomTheme(theme: Theme) {
+    currentTheme = theme;
+    themeName = theme.name;
+    applyTheme(theme);
+  }
+
   return {
     get current() { return currentTheme; },
     get name() { return themeName; },
     get loading() { return loading; },
     setTheme,
+    applyTheme: applyCustomTheme,
   };
 }

@@ -411,6 +411,11 @@
               >{theme.toUpperCase()}</button>
             {/each}
           </div>
+          <button
+            type="button"
+            style="margin-top:6px;padding:5px 14px;font-size:10px;letter-spacing:1px;background:var(--color-accent);color:#fff;border:none;cursor:pointer;"
+            onclick={() => onupdate({ _openThemeEditor: true } as any)}
+          >EDIT THEME</button>
         </div>
         <div>
           <label for="settings-fontsize" style={labelStyle}>FONT SIZE: {settings.fontSize}px</label>

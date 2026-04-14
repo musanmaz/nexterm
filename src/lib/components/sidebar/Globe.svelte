@@ -23,10 +23,12 @@
 
   const GROUPS = [
     { id: 'git', label: 'GIT', re: /\bgit\b/i },
-    { id: 'container', label: 'DOCKER/K8S', re: /\b(docker|kubectl|helm)\b/i },
-    { id: 'package', label: 'PKG', re: /\b(npm|pnpm|yarn|pip|brew|cargo)\b/i },
-    { id: 'network', label: 'NET', re: /\b(curl|wget|ssh|scp|nc|nmap|ping)\b/i },
-    { id: 'system', label: 'SYS', re: /\b(top|htop|ps|kill|lsof|df|du|free|vm_stat)\b/i },
+    { id: 'container', label: 'DOCKER/K8S', re: /\b(docker|kubectl|helm|oc|podman)\b/i },
+    { id: 'package', label: 'PKG', re: /\b(npm|pnpm|yarn|pip|brew|cargo|apt|dnf)\b/i },
+    { id: 'network', label: 'NET', re: /\b(curl|wget|ssh|scp|nc|nmap|ping|dig|traceroute)\b/i },
+    { id: 'system', label: 'SYS', re: /\b(top|htop|ps|kill|lsof|df|du|free|vm_stat|systemctl)\b/i },
+    { id: 'files', label: 'FILES', re: /\b(ls|cd|cat|cp|mv|rm|mkdir|find|grep|rg|fd|tar|zip)\b/i },
+    { id: 'editor', label: 'EDIT', re: /\b(vim|nvim|nano|code|emacs|vi)\b/i },
   ];
 
   function computeHeatmap(items: string[]): { label: string; count: number; ratio: number }[] {
@@ -53,11 +55,14 @@
   ): { severity: 'low' | 'medium' | 'high'; text: string }[] {
     const alerts: { severity: 'low' | 'medium' | 'high'; text: string }[] = [];
     const recent = cmdItems.slice(0, 20).join('\n');
-    if (/\b(rm\s+-rf\s+\/|mkfs|dd\s+if=|chmod\s+777)\b/i.test(recent)) {
+    if (/\b(rm\s+-rf\s+\/|mkfs|dd\s+if=|chmod\s+777|:(){ :\|:& };:)\b/i.test(recent)) {
       alerts.push({ severity: 'high', text: 'Potential destructive command pattern detected.' });
     }
-    if (/\b(nmap|nc\s+-l|tcpdump|wireshark)\b/i.test(recent)) {
+    if (/\b(nmap|nc\s+-l|tcpdump|wireshark|masscan)\b/i.test(recent)) {
       alerts.push({ severity: 'medium', text: 'Network probing/sniffing command observed.' });
+    }
+    if (/\b(sudo\s+su|passwd|chown\s+-R|visudo)\b/i.test(recent)) {
+      alerts.push({ severity: 'low', text: 'Privilege escalation command used.' });
     }
     const topCpu = [...procItems].sort((a, b) => b.cpu_usage - a.cpu_usage)[0];
     if (topCpu && topCpu.cpu_usage > 85) {

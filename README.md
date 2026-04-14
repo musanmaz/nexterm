@@ -260,7 +260,7 @@ Themes are JSON files in `static/themes/` defining colors for the UI, terminal, 
 
 ## Releases
 
-- **Latest**: [v1.1.0](https://github.com/musanmaz/nexterm/releases/tag/v1.1.0)
+- **Latest**: [v1.3.0](https://github.com/musanmaz/nexterm/releases/tag/v1.3.0)
 - **All Releases**: [github.com/musanmaz/nexterm/releases](https://github.com/musanmaz/nexterm/releases)
 
 ## Repository

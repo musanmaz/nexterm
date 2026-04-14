@@ -1,6 +1,7 @@
 <script lang="ts">
   import Clock from './Clock.svelte';
   import Panel from '$lib/components/shared/Panel.svelte';
+  import { getCurrentVersion } from '$lib/utils/updater';
 
   let {
     hostname = '',
@@ -109,6 +110,6 @@
   </button>
 
   <div style="text-align:center;font-size:8px;color:var(--color-text);opacity:0.3;padding-bottom:8px;letter-spacing:2px;">
-    NEXTERM v1.0.0
+    NEXTERM v{getCurrentVersion()}
   </div>
 </div>

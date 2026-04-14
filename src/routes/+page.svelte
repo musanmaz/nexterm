@@ -384,10 +384,12 @@
           branches={gitStore.branches}
           commits={gitStore.commits}
           status={gitStore.status}
+          diffs={gitStore.diffs}
           isRepo={gitStore.isRepo}
           currentPath={gitStore.currentPath}
           onrefresh={() => gitStore.refresh()}
           onpathchange={(path) => gitStore.setPath(path)}
+          onloaddiff={(staged) => gitStore.loadDiff(staged)}
         />
       {:else if activePanel === 'ssh'}
         <SSHManager

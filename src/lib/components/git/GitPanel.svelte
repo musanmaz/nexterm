@@ -1,20 +1,24 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import BranchGraph from './BranchGraph.svelte';
+  import DiffViewer from './DiffViewer.svelte';
   import Panel from '$lib/components/shared/Panel.svelte';
-  import type { GitBranch, GitCommit, GitStatus } from '$lib/types';
+  import type { GitBranch, GitCommit, GitStatus, FileDiff } from '$lib/types';
 
-  let { branches = [], commits = [], status = null, isRepo = false, currentPath = '', onrefresh, onpathchange }: {
+  let { branches = [], commits = [], status = null, diffs = [], isRepo = false, currentPath = '', onrefresh, onpathchange, onloaddiff }: {
     branches?: GitBranch[];
     commits?: GitCommit[];
     status?: GitStatus | null;
+    diffs?: FileDiff[];
     isRepo?: boolean;
     currentPath?: string;
     onrefresh?: () => void;
     onpathchange?: (path: string) => void;
+    onloaddiff?: (staged: boolean) => void;
   } = $props();
 
-  let activeTab = $state<'status' | 'log' | 'branches'>('status');
+  let activeTab = $state<'status' | 'log' | 'branches' | 'diff'>('status');
+  let diffStaged = $state(false);
   let pathInput = $state('');
 
   $effect(() => {
@@ -64,7 +68,7 @@
     </div>
   {:else}
     <div style="display:flex;gap:8px;padding:8px;border-bottom:1px solid var(--color-border);">
-      {#each [['status', 'STATUS'], ['log', 'LOG'], ['branches', 'BRANCHES']] as [tab, label]}
+      {#each [['status', 'STATUS'], ['log', 'LOG'], ['branches', 'BRANCHES'], ['diff', 'DIFF']] as [tab, label]}
         <button
           type="button"
           style="
@@ -73,7 +77,7 @@
             color:{activeTab === tab ? 'var(--color-bg-primary)' : 'var(--color-text)'};
             border:1px solid {activeTab === tab ? 'var(--color-primary)' : 'var(--color-border)'};
           "
-          onclick={() => activeTab = tab as typeof activeTab}
+          onclick={() => { activeTab = tab as typeof activeTab; if (tab === 'diff') onloaddiff?.(diffStaged); }}
         >{label}</button>
       {/each}
       <div style="flex:1;"></div>
@@ -142,6 +146,30 @@
             </div>
           {/each}
         </div>
+      {:else if activeTab === 'diff'}
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button
+            type="button"
+            style="
+              padding:3px 10px;font-size:9px;letter-spacing:1px;cursor:pointer;transition:all 0.2s;
+              background:{!diffStaged ? 'var(--color-warning)' : 'transparent'};
+              color:{!diffStaged ? 'var(--color-bg-primary)' : 'var(--color-text)'};
+              border:1px solid {!diffStaged ? 'var(--color-warning)' : 'var(--color-border)'};
+            "
+            onclick={() => { diffStaged = false; onloaddiff?.(false); }}
+          >UNSTAGED</button>
+          <button
+            type="button"
+            style="
+              padding:3px 10px;font-size:9px;letter-spacing:1px;cursor:pointer;transition:all 0.2s;
+              background:{diffStaged ? 'var(--color-success)' : 'transparent'};
+              color:{diffStaged ? 'var(--color-bg-primary)' : 'var(--color-text)'};
+              border:1px solid {diffStaged ? 'var(--color-success)' : 'var(--color-border)'};
+            "
+            onclick={() => { diffStaged = true; onloaddiff?.(true); }}
+          >STAGED</button>
+        </div>
+        <DiffViewer {diffs} />
       {/if}
     </div>
   {/if}

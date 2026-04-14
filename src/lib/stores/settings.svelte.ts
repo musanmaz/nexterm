@@ -7,16 +7,15 @@ const defaultSettings: AppSettings = {
   audioVolume: 0.5,
   fontSize: 14,
   shell: '',
-  aiProvider: 'ollama',
+  aiProvider: '',
   aiApiKey: '',
-  aiModel: 'llama3',
-  litellmBaseUrl: 'http://localhost:4000',
+  aiModel: '',
+  litellmBaseUrl: '',
   litellmApiKey: '',
-  litellmModel: 'gpt-4',
-  aiProviders: [
-    { id: 'ollama-default', name: 'Ollama (Local)', type: 'ollama', baseUrl: 'http://localhost:11434', apiKey: '', model: 'llama3', models: [], enabled: true },
-  ],
-  activeProviderId: 'ollama-default',
+  litellmModel: '',
+  aiProviders: [],
+  activeProviderId: '',
+  terminalProfiles: [],
 };
 
 let settings = $state<AppSettings>({ ...defaultSettings });

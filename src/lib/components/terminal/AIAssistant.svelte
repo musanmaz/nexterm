@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { sendChatWithProvider, sendChatMessage, type AIChatConfig } from '$lib/utils/ai-chat';
+  import { sendChatWithProvider, sendChatMessage, type AIChatConfig, type AIContext } from '$lib/utils/ai-chat';
   import type { ChatMessage, AIProvider, ChatSession, ChatMode } from '$lib/types';
 
   let { provider = 'ollama', model = 'llama3', apiKey = '',
         litellmBaseUrl = 'http://localhost:4000', litellmApiKey = '', litellmModel = 'gpt-4',
         providers = [], activeProviderId = '',
+        cwd = '', osInfo = '', recentCommands = [],
         oncommand, onchangeprovider, onchangemodel }: {
     provider?: string;
     model?: string;
@@ -14,10 +15,15 @@
     litellmModel?: string;
     providers?: AIProvider[];
     activeProviderId?: string;
+    cwd?: string;
+    osInfo?: string;
+    recentCommands?: string[];
     oncommand?: (cmd: string) => void;
     onchangeprovider?: (id: string) => void;
     onchangemodel?: (providerId: string, model: string) => void;
   } = $props();
+
+  const aiContext = $derived<AIContext>({ cwd, os: osInfo, recentCommands });
 
   const MODES: { id: ChatMode; icon: string; label: string; desc: string; color: string }[] = [
     { id: 'chat', icon: '💬', label: 'CHAT', desc: 'General conversation', color: 'var(--color-primary)' },
@@ -134,10 +140,10 @@
       const msgs = sessions.find(s => s.id === activeSessionId)!.messages;
       const mode = activeSession.mode;
       if (activeProvider) {
-        reply = await sendChatWithProvider(msgs, activeProvider, mode);
+        reply = await sendChatWithProvider(msgs, activeProvider, mode, aiContext);
       } else {
         const config: AIChatConfig = { provider, model, apiKey, litellmBaseUrl, litellmApiKey, litellmModel };
-        reply = await sendChatMessage(msgs, config, mode);
+        reply = await sendChatMessage(msgs, config, mode, aiContext);
       }
       const assistantMsg: ChatMessage = { role: 'assistant', content: reply, timestamp: Date.now() };
       sessions = sessions.map(s => s.id === activeSessionId ? { ...s, messages: [...s.messages, assistantMsg] } : s);
@@ -322,9 +328,13 @@
   {/if}
 
   {#if expanded}
-    <!-- Mode Banner -->
+    <!-- Mode Banner + Context -->
     <div style="display:flex;align-items:center;gap:6px;padding:4px 12px;background:{modeInfo.color};opacity:0.15;">
       <span style="font-size:9px;letter-spacing:2px;color:var(--color-text-bright);">{modeInfo.icon} {modeInfo.label} MODE — {modeInfo.desc}</span>
+      <div style="flex:1;"></div>
+      {#if cwd}
+        <span style="font-size:8px;color:var(--color-text);opacity:0.6;font-family:var(--font-mono);">{cwd}</span>
+      {/if}
     </div>
 
     <!-- Messages -->

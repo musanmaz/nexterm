@@ -283,6 +283,9 @@
       litellmModel={settingsStore.current.litellmModel}
       providers={settingsStore.current.aiProviders || []}
       activeProviderId={settingsStore.current.activeProviderId || ''}
+      cwd={terminalCwd}
+      osInfo={systemStore.osInfo}
+      recentCommands={commandFeed.slice(0, 15)}
       oncommand={runCommand}
       onchangeprovider={(id) => settingsStore.update({ activeProviderId: id })}
       onchangemodel={(providerId, newModel) => {

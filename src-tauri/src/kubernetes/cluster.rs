@@ -37,30 +37,18 @@ fn resolve_oc_path() -> Option<PathBuf> {
 
 fn kubectl_command() -> Result<Command, String> {
     let kubectl_path = resolve_kubectl_path().ok_or_else(|| {
-        "kubectl not found. Ensure it is installed and available in PATH (or in /opt/homebrew/bin or /usr/local/bin).".to_string()
+        "kubectl not found. Ensure it is installed and available in PATH.".to_string()
     })?;
     Ok(Command::new(kubectl_path))
 }
 
-fn kubectl(args: &[&str]) -> Result<String, String> {
-    let mut cmd = kubectl_command()?;
-    let output = cmd.args(args)
-        .output()
-        .map_err(|e| format!("failed to execute kubectl: {}", e))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("kubectl error: {}", stderr));
-    }
-    Ok(String::from_utf8_lossy(&output.stdout).to_string())
-}
-
-fn kubectl_with_kubeconfig(kubeconfig: &str, args: &[&str]) -> Result<String, String> {
+fn run_kubectl(kubeconfig: &str, args: &[&str]) -> Result<String, String> {
     let mut cmd = kubectl_command()?;
     if !kubeconfig.is_empty() {
         cmd.arg(format!("--kubeconfig={}", kubeconfig));
     }
-    let output = cmd.args(args)
+    let output = cmd
+        .args(args)
         .output()
         .map_err(|e| format!("failed to execute kubectl: {}", e))?;
 
@@ -141,60 +129,59 @@ pub fn k8s_is_available() -> bool {
 }
 
 #[tauri::command]
-pub fn k8s_get_contexts() -> Result<Vec<K8sContext>, String> {
-    let output = kubectl(&["config", "get-contexts", "-o", "name"])?;
-    let current = kubectl(&["config", "current-context"])
-        .unwrap_or_default()
-        .trim()
+pub fn k8s_get_contexts(kubeconfig: Option<String>) -> Result<Vec<K8sContext>, String> {
+    let kc = kubeconfig.unwrap_or_default();
+
+    // Single JSON call to get all config — much faster than per-context queries
+    let output = run_kubectl(&kc, &["config", "view", "-o", "json"])?;
+    let json: serde_json::Value =
+        serde_json::from_str(&output).map_err(|e| format!("JSON parse error: {}", e))?;
+
+    let current = json["current-context"]
+        .as_str()
+        .unwrap_or("")
         .to_string();
 
+    let ctx_items = json["contexts"].as_array();
     let mut contexts = Vec::new();
 
-    for line in output.lines() {
-        let name = line.trim().to_string();
-        if name.is_empty() {
-            continue;
+    if let Some(items) = ctx_items {
+        for item in items {
+            let name = item["name"].as_str().unwrap_or("").to_string();
+            let ctx = &item["context"];
+            contexts.push(K8sContext {
+                is_current: name == current,
+                cluster: ctx["cluster"].as_str().unwrap_or("").to_string(),
+                user: ctx["user"].as_str().unwrap_or("").to_string(),
+                namespace: {
+                    let ns = ctx["namespace"].as_str().unwrap_or("");
+                    if ns.is_empty() { "default".to_string() } else { ns.to_string() }
+                },
+                name,
+            });
         }
-
-        let cluster = kubectl(&[
-            "config", "view", "-o",
-            &format!("jsonpath={{.contexts[?(@.name==\"{}\")].context.cluster}}", name),
-        ]).unwrap_or_default().trim().to_string();
-
-        let user = kubectl(&[
-            "config", "view", "-o",
-            &format!("jsonpath={{.contexts[?(@.name==\"{}\")].context.user}}", name),
-        ]).unwrap_or_default().trim().to_string();
-
-        let namespace = kubectl(&[
-            "config", "view", "-o",
-            &format!("jsonpath={{.contexts[?(@.name==\"{}\")].context.namespace}}", name),
-        ]).unwrap_or_default().trim().to_string();
-
-        contexts.push(K8sContext {
-            is_current: name == current,
-            cluster,
-            user,
-            namespace: if namespace.is_empty() { "default".to_string() } else { namespace },
-            name,
-        });
     }
 
     Ok(contexts)
 }
 
 #[tauri::command]
-pub fn k8s_switch_context(context_name: String) -> Result<(), String> {
-    kubectl(&["config", "use-context", &context_name])?;
+pub fn k8s_switch_context(context_name: String, kubeconfig: Option<String>) -> Result<(), String> {
+    let kc = kubeconfig.unwrap_or_default();
+    run_kubectl(&kc, &["config", "use-context", &context_name])?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn k8s_get_namespaces() -> Result<Vec<K8sNamespace>, String> {
-    let output = kubectl(&[
-        "get", "namespaces", "-o",
-        "jsonpath={range .items[*]}{.metadata.name}|{.status.phase}|{.metadata.creationTimestamp}{\"\\n\"}{end}",
-    ])?;
+pub fn k8s_get_namespaces(kubeconfig: Option<String>) -> Result<Vec<K8sNamespace>, String> {
+    let kc = kubeconfig.unwrap_or_default();
+    let output = run_kubectl(
+        &kc,
+        &[
+            "get", "namespaces", "-o",
+            "jsonpath={range .items[*]}{.metadata.name}|{.status.phase}|{.metadata.creationTimestamp}{\"\\n\"}{end}",
+        ],
+    )?;
 
     let mut namespaces = Vec::new();
     for line in output.lines() {
@@ -211,15 +198,18 @@ pub fn k8s_get_namespaces() -> Result<Vec<K8sNamespace>, String> {
 }
 
 #[tauri::command]
-pub fn k8s_get_pods(namespace: String) -> Result<Vec<K8sPod>, String> {
-    let ns_arg = if namespace.is_empty() { "--all-namespaces".to_string() } else { format!("-n={}", namespace) };
+pub fn k8s_get_pods(namespace: String, kubeconfig: Option<String>) -> Result<Vec<K8sPod>, String> {
+    let kc = kubeconfig.unwrap_or_default();
+    let ns_arg = if namespace.is_empty() {
+        "--all-namespaces".to_string()
+    } else {
+        format!("-n={}", namespace)
+    };
 
-    let output = kubectl(&[
-        "get", "pods", &ns_arg, "-o", "json",
-    ])?;
+    let output = run_kubectl(&kc, &["get", "pods", &ns_arg, "-o", "json"])?;
 
-    let json: serde_json::Value = serde_json::from_str(&output)
-        .map_err(|e| format!("JSON parse error: {}", e))?;
+    let json: serde_json::Value =
+        serde_json::from_str(&output).map_err(|e| format!("JSON parse error: {}", e))?;
 
     let items = json["items"].as_array().ok_or("No items")?;
     let mut pods = Vec::new();
@@ -232,16 +222,28 @@ pub fn k8s_get_pods(namespace: String) -> Result<Vec<K8sPod>, String> {
         let container_statuses = status["containerStatuses"].as_array();
         let total = container_statuses.map(|c| c.len()).unwrap_or(0);
         let ready_count = container_statuses
-            .map(|cs| cs.iter().filter(|c| c["ready"].as_bool().unwrap_or(false)).count())
+            .map(|cs| {
+                cs.iter()
+                    .filter(|c| c["ready"].as_bool().unwrap_or(false))
+                    .count()
+            })
             .unwrap_or(0);
 
         let restarts: i64 = container_statuses
-            .map(|cs| cs.iter().map(|c| c["restartCount"].as_i64().unwrap_or(0)).sum())
+            .map(|cs| {
+                cs.iter()
+                    .map(|c| c["restartCount"].as_i64().unwrap_or(0))
+                    .sum()
+            })
             .unwrap_or(0);
 
         let containers: Vec<String> = spec["containers"]
             .as_array()
-            .map(|cs| cs.iter().filter_map(|c| c["name"].as_str().map(|s| s.to_string())).collect())
+            .map(|cs| {
+                cs.iter()
+                    .filter_map(|c| c["name"].as_str().map(|s| s.to_string()))
+                    .collect()
+            })
             .unwrap_or_default();
 
         pods.push(K8sPod {
@@ -260,33 +262,41 @@ pub fn k8s_get_pods(namespace: String) -> Result<Vec<K8sPod>, String> {
 }
 
 #[tauri::command]
-pub fn k8s_get_deployments(namespace: String) -> Result<Vec<K8sDeployment>, String> {
-    let ns_arg = if namespace.is_empty() { "--all-namespaces".to_string() } else { format!("-n={}", namespace) };
+pub fn k8s_get_deployments(
+    namespace: String,
+    kubeconfig: Option<String>,
+) -> Result<Vec<K8sDeployment>, String> {
+    let kc = kubeconfig.unwrap_or_default();
+    let ns_arg = if namespace.is_empty() {
+        "--all-namespaces".to_string()
+    } else {
+        format!("-n={}", namespace)
+    };
 
-    let output = kubectl(&["get", "deployments", &ns_arg, "-o", "json"])?;
+    let output = run_kubectl(&kc, &["get", "deployments", &ns_arg, "-o", "json"])?;
 
-    let json: serde_json::Value = serde_json::from_str(&output)
-        .map_err(|e| format!("JSON parse error: {}", e))?;
+    let json: serde_json::Value =
+        serde_json::from_str(&output).map_err(|e| format!("JSON parse error: {}", e))?;
 
     let items = json["items"].as_array().ok_or("No items")?;
     let mut deployments = Vec::new();
 
     for item in items {
         let metadata = &item["metadata"];
-        let status = &item["status"];
+        let st = &item["status"];
         let spec = &item["spec"];
 
         let replicas = spec["replicas"].as_i64().unwrap_or(0);
-        let ready_replicas = status["readyReplicas"].as_i64().unwrap_or(0);
-        let updated = status["updatedReplicas"].as_i64().unwrap_or(0);
-        let available = status["availableReplicas"].as_i64().unwrap_or(0);
+        let ready_replicas = st["readyReplicas"].as_i64().unwrap_or(0);
+        let updated = st["updatedReplicas"].as_i64().unwrap_or(0);
+        let avail = st["availableReplicas"].as_i64().unwrap_or(0);
 
         deployments.push(K8sDeployment {
             name: metadata["name"].as_str().unwrap_or("").to_string(),
             namespace: metadata["namespace"].as_str().unwrap_or("").to_string(),
             ready: format!("{}/{}", ready_replicas, replicas),
             up_to_date: updated,
-            available,
+            available: avail,
             age: format_age(metadata["creationTimestamp"].as_str().unwrap_or("")),
             replicas,
         });
@@ -296,13 +306,21 @@ pub fn k8s_get_deployments(namespace: String) -> Result<Vec<K8sDeployment>, Stri
 }
 
 #[tauri::command]
-pub fn k8s_get_services(namespace: String) -> Result<Vec<K8sService>, String> {
-    let ns_arg = if namespace.is_empty() { "--all-namespaces".to_string() } else { format!("-n={}", namespace) };
+pub fn k8s_get_services(
+    namespace: String,
+    kubeconfig: Option<String>,
+) -> Result<Vec<K8sService>, String> {
+    let kc = kubeconfig.unwrap_or_default();
+    let ns_arg = if namespace.is_empty() {
+        "--all-namespaces".to_string()
+    } else {
+        format!("-n={}", namespace)
+    };
 
-    let output = kubectl(&["get", "services", &ns_arg, "-o", "json"])?;
+    let output = run_kubectl(&kc, &["get", "services", &ns_arg, "-o", "json"])?;
 
-    let json: serde_json::Value = serde_json::from_str(&output)
-        .map_err(|e| format!("JSON parse error: {}", e))?;
+    let json: serde_json::Value =
+        serde_json::from_str(&output).map_err(|e| format!("JSON parse error: {}", e))?;
 
     let items = json["items"].as_array().ok_or("No items")?;
     let mut services = Vec::new();
@@ -314,24 +332,39 @@ pub fn k8s_get_services(namespace: String) -> Result<Vec<K8sService>, String> {
         let ports: Vec<String> = spec["ports"]
             .as_array()
             .map(|ps| {
-                ps.iter().map(|p| {
-                    let port = p["port"].as_i64().unwrap_or(0);
-                    let target = p["targetPort"].as_i64()
-                        .map(|t| t.to_string())
-                        .unwrap_or_else(|| p["targetPort"].as_str().unwrap_or("").to_string());
-                    let protocol = p["protocol"].as_str().unwrap_or("TCP");
-                    format!("{}:{}/{}", port, target, protocol)
-                }).collect()
+                ps.iter()
+                    .map(|p| {
+                        let port = p["port"].as_i64().unwrap_or(0);
+                        let target = p["targetPort"]
+                            .as_i64()
+                            .map(|t| t.to_string())
+                            .unwrap_or_else(|| {
+                                p["targetPort"].as_str().unwrap_or("").to_string()
+                            });
+                        let protocol = p["protocol"].as_str().unwrap_or("TCP");
+                        format!("{}:{}/{}", port, target, protocol)
+                    })
+                    .collect()
             })
             .unwrap_or_default();
 
         let external_ips: String = spec["externalIPs"]
             .as_array()
-            .map(|ips| ips.iter().filter_map(|ip| ip.as_str()).collect::<Vec<_>>().join(","))
+            .map(|ips| {
+                ips.iter()
+                    .filter_map(|ip| ip.as_str())
+                    .collect::<Vec<_>>()
+                    .join(",")
+            })
             .or_else(|| {
-                item["status"]["loadBalancer"]["ingress"].as_array().map(|ings| {
-                    ings.iter().filter_map(|i| i["ip"].as_str().or(i["hostname"].as_str())).collect::<Vec<_>>().join(",")
-                })
+                item["status"]["loadBalancer"]["ingress"]
+                    .as_array()
+                    .map(|ings| {
+                        ings.iter()
+                            .filter_map(|i| i["ip"].as_str().or(i["hostname"].as_str()))
+                            .collect::<Vec<_>>()
+                            .join(",")
+                    })
             })
             .unwrap_or_default();
 
@@ -340,7 +373,11 @@ pub fn k8s_get_services(namespace: String) -> Result<Vec<K8sService>, String> {
             namespace: metadata["namespace"].as_str().unwrap_or("").to_string(),
             svc_type: spec["type"].as_str().unwrap_or("ClusterIP").to_string(),
             cluster_ip: spec["clusterIP"].as_str().unwrap_or("").to_string(),
-            external_ip: if external_ips.is_empty() { "<none>".to_string() } else { external_ips },
+            external_ip: if external_ips.is_empty() {
+                "<none>".to_string()
+            } else {
+                external_ips
+            },
             ports: ports.join(", "),
             age: format_age(metadata["creationTimestamp"].as_str().unwrap_or("")),
         });
@@ -350,27 +387,57 @@ pub fn k8s_get_services(namespace: String) -> Result<Vec<K8sService>, String> {
 }
 
 #[tauri::command]
-pub fn k8s_scale_deployment(namespace: String, name: String, replicas: i64) -> Result<(), String> {
-    kubectl(&[
-        "scale", "deployment", &name,
-        &format!("-n={}", namespace),
-        &format!("--replicas={}", replicas),
-    ])?;
+pub fn k8s_scale_deployment(
+    namespace: String,
+    name: String,
+    replicas: i64,
+    kubeconfig: Option<String>,
+) -> Result<(), String> {
+    let kc = kubeconfig.unwrap_or_default();
+    run_kubectl(
+        &kc,
+        &[
+            "scale",
+            "deployment",
+            &name,
+            &format!("-n={}", namespace),
+            &format!("--replicas={}", replicas),
+        ],
+    )?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn k8s_restart_deployment(namespace: String, name: String) -> Result<(), String> {
-    kubectl(&[
-        "rollout", "restart", "deployment", &name,
-        &format!("-n={}", namespace),
-    ])?;
+pub fn k8s_restart_deployment(
+    namespace: String,
+    name: String,
+    kubeconfig: Option<String>,
+) -> Result<(), String> {
+    let kc = kubeconfig.unwrap_or_default();
+    run_kubectl(
+        &kc,
+        &[
+            "rollout",
+            "restart",
+            "deployment",
+            &name,
+            &format!("-n={}", namespace),
+        ],
+    )?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn k8s_delete_pod(namespace: String, name: String) -> Result<(), String> {
-    kubectl(&["delete", "pod", &name, &format!("-n={}", namespace)])?;
+pub fn k8s_delete_pod(
+    namespace: String,
+    name: String,
+    kubeconfig: Option<String>,
+) -> Result<(), String> {
+    let kc = kubeconfig.unwrap_or_default();
+    run_kubectl(
+        &kc,
+        &["delete", "pod", &name, &format!("-n={}", namespace)],
+    )?;
     Ok(())
 }
 
@@ -384,7 +451,8 @@ pub fn k8s_oc_login(
     insecure_skip_tls: bool,
 ) -> Result<String, String> {
     let oc_path = resolve_oc_path().ok_or_else(|| {
-        "oc CLI not found. Install the OpenShift CLI (oc) and ensure it is available in PATH.".to_string()
+        "oc CLI not found. Install the OpenShift CLI (oc) and ensure it is available in PATH."
+            .to_string()
     })?;
 
     let mut cmd = Command::new(oc_path);
@@ -397,7 +465,8 @@ pub fn k8s_oc_login(
         cmd.arg("--insecure-skip-tls-verify");
     }
 
-    let output = cmd.output()
+    let output = cmd
+        .output()
         .map_err(|e| format!("Failed to execute oc: {}", e))?;
 
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
@@ -416,42 +485,10 @@ pub fn k8s_oc_is_available() -> bool {
 }
 
 #[tauri::command]
-pub fn k8s_get_contexts_for_kubeconfig(kubeconfig_path: String) -> Result<Vec<K8sContext>, String> {
-    let output = kubectl_with_kubeconfig(&kubeconfig_path, &["config", "get-contexts", "-o", "name"])?;
-    let current = kubectl_with_kubeconfig(&kubeconfig_path, &["config", "current-context"])
-        .unwrap_or_default()
-        .trim()
-        .to_string();
-
-    let mut contexts = Vec::new();
-    for line in output.lines() {
-        let name = line.trim().to_string();
-        if name.is_empty() { continue; }
-
-        let cluster = kubectl_with_kubeconfig(&kubeconfig_path, &[
-            "config", "view", "-o",
-            &format!("jsonpath={{.contexts[?(@.name==\"{}\")].context.cluster}}", name),
-        ]).unwrap_or_default().trim().to_string();
-
-        let user = kubectl_with_kubeconfig(&kubeconfig_path, &[
-            "config", "view", "-o",
-            &format!("jsonpath={{.contexts[?(@.name==\"{}\")].context.user}}", name),
-        ]).unwrap_or_default().trim().to_string();
-
-        let namespace = kubectl_with_kubeconfig(&kubeconfig_path, &[
-            "config", "view", "-o",
-            &format!("jsonpath={{.contexts[?(@.name==\"{}\")].context.namespace}}", name),
-        ]).unwrap_or_default().trim().to_string();
-
-        contexts.push(K8sContext {
-            is_current: name == current,
-            cluster,
-            user,
-            namespace: if namespace.is_empty() { "default".to_string() } else { namespace },
-            name,
-        });
-    }
-    Ok(contexts)
+pub fn k8s_get_contexts_for_kubeconfig(
+    kubeconfig_path: String,
+) -> Result<Vec<K8sContext>, String> {
+    k8s_get_contexts(Some(kubeconfig_path))
 }
 
 fn format_age(timestamp: &str) -> String {
@@ -464,9 +501,15 @@ fn format_age(timestamp: &str) -> String {
             let now = chrono::Utc::now();
             let duration = now.signed_duration_since(dt.with_timezone(&chrono::Utc));
             let secs = duration.num_seconds();
-            if secs < 60 { return format!("{}s", secs); }
-            if secs < 3600 { return format!("{}m", secs / 60); }
-            if secs < 86400 { return format!("{}h", secs / 3600); }
+            if secs < 60 {
+                return format!("{}s", secs);
+            }
+            if secs < 3600 {
+                return format!("{}m", secs / 60);
+            }
+            if secs < 86400 {
+                return format!("{}h", secs / 3600);
+            }
             format!("{}d", secs / 86400)
         }
         Err(_) => timestamp.to_string(),

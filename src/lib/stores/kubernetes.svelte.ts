@@ -2,7 +2,7 @@ import type { K8sContext, K8sPod, K8sDeployment, K8sService, K8sNamespace, Clust
 import {
   k8sIsAvailable, k8sGetContexts, k8sSwitchContext,
   k8sGetNamespaces, k8sGetPods, k8sGetDeployments, k8sGetServices,
-  k8sOcLogin, k8sOcIsAvailable, k8sGetContextsForKubeconfig,
+  k8sOcLogin, k8sOcIsAvailable,
 } from '$lib/utils/ipc';
 
 const STORAGE_KEY = 'nexterm-cluster-profiles';
@@ -41,6 +41,14 @@ function saveProfiles() {
   }));
 }
 
+function getActiveKubeconfig(): string | undefined {
+  const profile = clusterProfiles.find(p => p.id === activeClusterId);
+  if (profile?.type === 'kubeconfig' && profile.kubeconfigPath) {
+    return profile.kubeconfigPath;
+  }
+  return undefined;
+}
+
 export function getKubernetesStore() {
   async function checkAvailable() {
     try { available = await k8sIsAvailable(); } catch { available = false; }
@@ -49,14 +57,14 @@ export function getKubernetesStore() {
 
   async function refreshContexts() {
     try {
-      contexts = await k8sGetContexts();
+      contexts = await k8sGetContexts(getActiveKubeconfig());
       error = '';
     } catch (e) { error = String(e); }
   }
 
   async function switchContext(name: string) {
     try {
-      await k8sSwitchContext(name);
+      await k8sSwitchContext(name, getActiveKubeconfig());
       await refreshContexts();
       await refreshNamespaces();
       currentNamespace = 'default';
@@ -66,7 +74,7 @@ export function getKubernetesStore() {
 
   async function refreshNamespaces() {
     try {
-      namespaces = await k8sGetNamespaces();
+      namespaces = await k8sGetNamespaces(getActiveKubeconfig());
     } catch { namespaces = []; }
   }
 
@@ -78,11 +86,12 @@ export function getKubernetesStore() {
   async function refreshAll() {
     loading = true;
     error = '';
+    const kc = getActiveKubeconfig();
     try {
       const [p, d, s] = await Promise.allSettled([
-        k8sGetPods(currentNamespace),
-        k8sGetDeployments(currentNamespace),
-        k8sGetServices(currentNamespace),
+        k8sGetPods(currentNamespace, kc),
+        k8sGetDeployments(currentNamespace, kc),
+        k8sGetServices(currentNamespace, kc),
       ]);
       pods = p.status === 'fulfilled' ? p.value : [];
       deployments = d.status === 'fulfilled' ? d.value : [];
@@ -143,15 +152,15 @@ export function getKubernetesStore() {
     loadProfiles();
     await checkAvailable();
     if (available) {
-      await refreshContexts();
-      await refreshNamespaces();
-      await refreshAll();
+      // Non-blocking: load data in background
+      refreshContexts().then(() => refreshNamespaces()).catch(() => {});
     }
   }
 
   return {
     get available() { return available; },
     get ocAvailable() { return ocAvailable; },
+    get kubeconfig() { return getActiveKubeconfig(); },
     get contexts() { return contexts; },
     get namespaces() { return namespaces; },
     get currentNamespace() { return currentNamespace; },

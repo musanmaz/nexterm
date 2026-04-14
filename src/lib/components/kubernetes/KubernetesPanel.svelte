@@ -16,6 +16,7 @@
     error = '',
     clusterProfiles = [],
     activeClusterId = 'default',
+    kubeconfig,
     onrefresh,
     onswitchcontext,
     onsetnamespace,
@@ -37,6 +38,7 @@
     error?: string;
     clusterProfiles?: ClusterProfile[];
     activeClusterId?: string;
+    kubeconfig?: string;
     onrefresh?: () => void;
     onswitchcontext?: (name: string) => void;
     onsetnamespace?: (ns: string) => void;
@@ -103,7 +105,7 @@
   async function handleScale() {
     if (!scaleTarget) return;
     try {
-      await k8sScaleDeployment(scaleTarget.ns, scaleTarget.name, scaleTarget.replicas);
+      await k8sScaleDeployment(scaleTarget.ns, scaleTarget.name, scaleTarget.replicas, kubeconfig);
       actionMsg = `Scaled ${scaleTarget.name} to ${scaleTarget.replicas}`;
       scaleTarget = null;
       setTimeout(() => onrefresh?.(), 1000);
@@ -113,7 +115,7 @@
 
   async function handleRestart(ns: string, name: string) {
     try {
-      await k8sRestartDeployment(ns, name);
+      await k8sRestartDeployment(ns, name, kubeconfig);
       actionMsg = `Restarting ${name}...`;
       setTimeout(() => onrefresh?.(), 2000);
     } catch (e) { actionMsg = `Restart error: ${e}`; }
@@ -122,7 +124,7 @@
 
   async function handleDeletePod(ns: string, name: string) {
     try {
-      await k8sDeletePod(ns, name);
+      await k8sDeletePod(ns, name, kubeconfig);
       actionMsg = `Deleted pod ${name}`;
       setTimeout(() => onrefresh?.(), 1000);
     } catch (e) { actionMsg = `Delete error: ${e}`; }

@@ -104,7 +104,7 @@
 
     try { sshStore.load(); } catch {}
 
-    try { await k8sStore.init(); } catch {}
+    k8sStore.init().catch(() => {});
 
     try {
       audio.init();
@@ -361,16 +361,19 @@
           error={k8sStore.error}
           clusterProfiles={k8sStore.clusterProfiles}
           activeClusterId={k8sStore.activeClusterId}
+          kubeconfig={k8sStore.kubeconfig}
           onrefresh={() => k8sStore.refreshAll()}
           onswitchcontext={(name) => k8sStore.switchContext(name)}
           onsetnamespace={(ns) => k8sStore.setNamespace(ns)}
           onexec={(pod, ns, container) => {
-            const c = container ? `-c ${container}` : '';
-            addTabWithCommand(`☸ ${pod}`, `kubectl exec -it ${pod} -n ${ns} ${c} -- /bin/sh`);
+            const kc = k8sStore.kubeconfig ? `--kubeconfig=${k8sStore.kubeconfig} ` : '';
+            const c = container ? `-c ${container} ` : '';
+            addTabWithCommand(`☸ ${pod}`, `kubectl ${kc}exec -it ${pod} -n ${ns} ${c}-- /bin/sh`);
           }}
           onlogs={(pod, ns, container) => {
-            const c = container ? `-c ${container}` : '';
-            addTabWithCommand(`📋 ${pod}`, `kubectl logs -f ${pod} -n ${ns} ${c}`);
+            const kc = k8sStore.kubeconfig ? `--kubeconfig=${k8sStore.kubeconfig} ` : '';
+            const c = container ? `-c ${container} ` : '';
+            addTabWithCommand(`📋 ${pod}`, `kubectl ${kc}logs -f ${pod} -n ${ns} ${c}`);
           }}
           onaddcluster={(profile) => { k8sStore.addCluster(profile); k8sStore.activateCluster(profile.id); }}
           onremovecluster={(id) => k8sStore.removeCluster(id)}

@@ -1,6 +1,6 @@
 const GITHUB_OWNER = 'musanmaz';
 const GITHUB_REPO = 'nexterm';
-const CURRENT_VERSION = '1.1.0';
+const CURRENT_VERSION = '1.2.0';
 
 export interface UpdateInfo {
   currentVersion: string;

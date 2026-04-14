@@ -132,27 +132,29 @@ export const aiAnalyzeError = (
 
 // Kubernetes Commands
 export const k8sIsAvailable = () => invoke<boolean>('k8s_is_available');
-export const k8sGetContexts = () => invoke<K8sContext[]>('k8s_get_contexts');
-export const k8sSwitchContext = (contextName: string) =>
-  invoke<void>('k8s_switch_context', { contextName });
-export const k8sGetNamespaces = () => invoke<K8sNamespace[]>('k8s_get_namespaces');
-export const k8sGetPods = (namespace: string) =>
-  invoke<K8sPod[]>('k8s_get_pods', { namespace });
-export const k8sGetDeployments = (namespace: string) =>
-  invoke<K8sDeployment[]>('k8s_get_deployments', { namespace });
-export const k8sGetServices = (namespace: string) =>
-  invoke<K8sService[]>('k8s_get_services', { namespace });
-export const k8sScaleDeployment = (namespace: string, name: string, replicas: number) =>
-  invoke<void>('k8s_scale_deployment', { namespace, name, replicas });
-export const k8sRestartDeployment = (namespace: string, name: string) =>
-  invoke<void>('k8s_restart_deployment', { namespace, name });
-export const k8sDeletePod = (namespace: string, name: string) =>
-  invoke<void>('k8s_delete_pod', { namespace, name });
+export const k8sGetContexts = (kubeconfig?: string) =>
+  invoke<K8sContext[]>('k8s_get_contexts', { kubeconfig: kubeconfig || null });
+export const k8sSwitchContext = (contextName: string, kubeconfig?: string) =>
+  invoke<void>('k8s_switch_context', { contextName, kubeconfig: kubeconfig || null });
+export const k8sGetNamespaces = (kubeconfig?: string) =>
+  invoke<K8sNamespace[]>('k8s_get_namespaces', { kubeconfig: kubeconfig || null });
+export const k8sGetPods = (namespace: string, kubeconfig?: string) =>
+  invoke<K8sPod[]>('k8s_get_pods', { namespace, kubeconfig: kubeconfig || null });
+export const k8sGetDeployments = (namespace: string, kubeconfig?: string) =>
+  invoke<K8sDeployment[]>('k8s_get_deployments', { namespace, kubeconfig: kubeconfig || null });
+export const k8sGetServices = (namespace: string, kubeconfig?: string) =>
+  invoke<K8sService[]>('k8s_get_services', { namespace, kubeconfig: kubeconfig || null });
+export const k8sScaleDeployment = (namespace: string, name: string, replicas: number, kubeconfig?: string) =>
+  invoke<void>('k8s_scale_deployment', { namespace, name, replicas, kubeconfig: kubeconfig || null });
+export const k8sRestartDeployment = (namespace: string, name: string, kubeconfig?: string) =>
+  invoke<void>('k8s_restart_deployment', { namespace, name, kubeconfig: kubeconfig || null });
+export const k8sDeletePod = (namespace: string, name: string, kubeconfig?: string) =>
+  invoke<void>('k8s_delete_pod', { namespace, name, kubeconfig: kubeconfig || null });
 export const k8sOcLogin = (apiUrl: string, username: string, password: string, insecureSkipTls: boolean) =>
   invoke<string>('k8s_oc_login', { apiUrl, username, password, insecureSkipTls });
 export const k8sOcIsAvailable = () => invoke<boolean>('k8s_oc_is_available');
 export const k8sGetContextsForKubeconfig = (kubeconfigPath: string) =>
-  invoke<import('$lib/types').K8sContext[]>('k8s_get_contexts_for_kubeconfig', { kubeconfigPath });
+  invoke<K8sContext[]>('k8s_get_contexts_for_kubeconfig', { kubeconfigPath });
 
 // Updater Commands
 export const downloadUpdate = (url: string, filename: string) =>
